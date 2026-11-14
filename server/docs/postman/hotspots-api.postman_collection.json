@@ -1,0 +1,928 @@
+{
+  "info": {
+    "name": "Hotspots API",
+    "description": "MODIS/VIIRS hotspots API (server/). Start the API first: see server/docs/running.md. Guide: server/docs/postman.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Meta",
+      "item": [
+        {
+          "name": "Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Database connected\", () => pm.expect(pm.response.json()).to.eql({status: \"ok\", database: \"connected\"}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "200 when the database opens, 503 otherwise.",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Dataset summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has summary fields\", () => pm.expect(b).to.include.keys(\"total_records\",\"min_date\",\"max_date\",\"instruments\",\"bbox\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Total records, date range, count per instrument and bbox. Use it to pick valid dates.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dataset",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dataset"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Hotspots",
+      "item": [
+        {
+          "name": "Yucatán, April 2013 (GeoJSON)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Is a FeatureCollection\", () => pm.expect(b.type).to.eql(\"FeatureCollection\"));",
+                  "pm.test(\"Returns at most limit\", () => pm.expect(b.features.length).to.be.at.most(5));",
+                  "pm.test(\"bbox is [min_lon, min_lat, max_lon, max_lat]\", () => pm.expect(b.metadata.bbox).to.eql([-90.4, 19.5, -87.4, 21.7]));",
+                  "pm.test(\"Coordinates are [lon, lat] inside the box\", () => b.features.forEach(f => {",
+                  "  const [lon, lat] = f.geometry.coordinates;",
+                  "  pm.expect(lon).to.be.within(-90.4, -87.4); pm.expect(lat).to.be.within(19.5, 21.7);",
+                  "}));",
+                  "pm.test(\"No message when there are results\", () => { if (b.features.length) pm.expect(b).to.not.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Main search: rectangle + inclusive UTC dates. Corners can be in any order.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=2013-04-01&end_date=2013-04-30&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Same box, corners reversed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Same bbox as normal order\", () => pm.expect(pm.response.json().metadata.bbox).to.eql([-90.4, 19.5, -87.4, 21.7]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=19.5&lon1=-87.4&lat2=21.7&lon2=-90.4&start_date=2013-04-01&end_date=2013-04-30&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Plain JSON format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has data array\", () => pm.expect(b.data).to.be.an(\"array\"));",
+                  "pm.test(\"Records have full columns\", () => { if (b.data.length) pm.expect(b.data[0]).to.include.keys(\"latitude\",\"longitude\",\"acq_date\",\"confidence_raw\",\"bright_mir\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=2013-04-01&end_date=2013-04-30&limit=5&format=json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "format",
+                  "value": "json"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "All optional filters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const f = pm.response.json().features;",
+                  "pm.test(\"Filters are respected\", () => f.forEach(x => {",
+                  "  pm.expect(x.properties.confidence).to.eql(\"high\");",
+                  "  pm.expect(x.properties.daynight).to.eql(\"D\");",
+                  "  pm.expect(x.properties.instrument).to.eql(\"VIIRS\");",
+                  "  pm.expect([0, null]).to.include(x.properties.fire_type);",
+                  "}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Untick any filter row in Params to switch it off.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=2013-04-01&end_date=2013-04-30&confidence_min=high&daynight=D&instrument=VIIRS&vegetation_only=true&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                },
+                {
+                  "key": "confidence_min",
+                  "value": "high"
+                },
+                {
+                  "key": "daynight",
+                  "value": "D"
+                },
+                {
+                  "key": "instrument",
+                  "value": "VIIRS"
+                },
+                {
+                  "key": "vegetation_only",
+                  "value": "true"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Next page (offset)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Offset echoed in metadata\", () => pm.expect(pm.response.json().metadata.offset).to.eql(5));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=2013-04-01&end_date=2013-04-30&limit=5&offset=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "offset",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Empty area (Spain)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"No features\", () => pm.expect(b.features).to.have.length(0));",
+                  "pm.test(\"Exact empty message\", () => pm.expect(b.message).to.eql(\"No data found in the selected area\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "A valid query with no hotspots still returns 200.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=40&lon1=0&lat2=41&lon2=1&start_date=2013-04-01&end_date=2013-04-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "40"
+                },
+                {
+                  "key": "lon1",
+                  "value": "0"
+                },
+                {
+                  "key": "lat2",
+                  "value": "41"
+                },
+                {
+                  "key": "lon2",
+                  "value": "1"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Errors (400/404/405)",
+      "item": [
+        {
+          "name": "Missing lat1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test(\"Error code is INVALID_PARAMETER\", () => pm.expect(e.code).to.eql(\"INVALID_PARAMETER\"));",
+                  "pm.test(\"Points at 'lat1'\", () => pm.expect(e.parameter).to.eql(\"lat1\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=2013-04-01&end_date=2013-04-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Latitude out of range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test(\"Error code is INVALID_PARAMETER\", () => pm.expect(e.code).to.eql(\"INVALID_PARAMETER\"));",
+                  "pm.test(\"Points at 'lat1'\", () => pm.expect(e.parameter).to.eql(\"lat1\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=100&lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=2013-04-01&end_date=2013-04-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "100"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Zero-height rectangle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test(\"Error code is INVALID_PARAMETER\", () => pm.expect(e.code).to.eql(\"INVALID_PARAMETER\"));",
+                  "pm.test(\"Points at 'lat2'\", () => pm.expect(e.parameter).to.eql(\"lat2\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=21.7&lon2=-87.4&start_date=2013-04-01&end_date=2013-04-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "end_date before start_date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=2013-04-30&end_date=2013-04-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-30"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-01"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bad date format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test(\"Error code is INVALID_PARAMETER\", () => pm.expect(e.code).to.eql(\"INVALID_PARAMETER\"));",
+                  "pm.test(\"Points at 'start_date'\", () => pm.expect(e.parameter).to.eql(\"start_date\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=01/04/2013&end_date=2013-04-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "01/04/2013"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "limit too large",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test(\"Error code is INVALID_PARAMETER\", () => pm.expect(e.code).to.eql(\"INVALID_PARAMETER\"));",
+                  "pm.test(\"Points at 'limit'\", () => pm.expect(e.parameter).to.eql(\"limit\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=2013-04-01&end_date=2013-04-30&limit=999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "21.7"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-90.4"
+                },
+                {
+                  "key": "lat2",
+                  "value": "19.5"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-87.4"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                },
+                {
+                  "key": "limit",
+                  "value": "999999"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST is not allowed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 405\", () => pm.response.to.have.status(405));",
+                  "pm.test(\"Code is METHOD_NOT_ALLOWED\", () => pm.expect(pm.response.json().error.code).to.eql(\"METHOD_NOT_ALLOWED\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hotspots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "hotspots"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unknown URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Code is NOT_FOUND\", () => pm.expect(pm.response.json().error.code).to.eql(\"NOT_FOUND\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/nope",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "nope"
+              ],
+              "query": []
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

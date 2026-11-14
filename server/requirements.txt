@@ -1,0 +1,6 @@
+# Production dependencies for the hotspots API (Python >= 3.12).
+Flask~=3.1
+flask-cors~=6.0
+duckdb~=2.0
+pydantic~=2.14
+python-dotenv~=1.2
