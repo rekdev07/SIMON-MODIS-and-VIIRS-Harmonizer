@@ -221,3 +221,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Hotspots API: local data (raw FIRMS JSON and DuckDB files), never commit
+data/
+*.duckdb
+*.duckdb.wal
