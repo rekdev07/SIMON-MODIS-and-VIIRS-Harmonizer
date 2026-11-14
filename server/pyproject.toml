@@ -1,0 +1,11 @@
+[project]
+name = "hotspots-api"
+version = "0.1.0"
+description = "Read-only REST API serving MODIS and VIIRS fire hotspots (NASA FIRMS) from DuckDB"
+requires-python = ">=3.12"
+# Dependencies are managed with pip: see requirements.txt and requirements-dev.txt.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
