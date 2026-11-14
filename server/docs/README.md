@@ -4,6 +4,8 @@ Plain-language docs for the backend in `server/`. No satellite background needed
 
 | Document | Read it to learn |
 |---|---|
+| [running.md](running.md) | Step by step: install, load data, start the API, run the tests, fix common problems |
+| [postman.md](postman.md) | How to try every endpoint in Postman, with a ready-to-import collection in [`postman/`](postman/) |
 | [api.md](api.md) | Every endpoint, its parameters, `curl` examples and example responses |
 | [filtering.md](filtering.md) | How two corners become a rectangle, how each filter works, pagination |
 | [dates.md](dates.md) | Why everything is UTC, why both dates are inclusive, the "midnight" case |

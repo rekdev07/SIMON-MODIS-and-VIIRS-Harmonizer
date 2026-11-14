@@ -92,6 +92,7 @@ curl "http://localhost:5000/api/v1/hotspots?lat1=40&lon1=0&lat2=41&lon2=1&start_
 
 ## More documentation
 
-See [`docs/`](docs/README.md): [API reference](docs/api.md), [filtering](docs/filtering.md),
+See [`docs/`](docs/README.md): [step-by-step setup](docs/running.md), [testing with Postman](docs/postman.md)
+(collection in `docs/postman/`), [API reference](docs/api.md), [filtering](docs/filtering.md),
 [dates](docs/dates.md) and [data import](docs/data-import.md). Developer rules are in
 [`AGENTS.md`](AGENTS.md).
