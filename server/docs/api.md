@@ -1,6 +1,8 @@
 # API reference
 
-Base URL when running locally: `http://localhost:5000`. All responses are JSON and all
+Base URL: `http://localhost:5000` on the computer running the API, or
+`http://<LAN IP>:5000` from other devices on the same network (the address is printed when the
+API starts; see [running.md](running.md#using-the-api-from-other-devices-lan)). The examples use `localhost`. All responses are JSON and all
 messages are in English. There is no authentication.
 
 ---

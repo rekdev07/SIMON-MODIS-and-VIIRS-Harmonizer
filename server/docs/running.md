@@ -110,8 +110,9 @@ and edit `.env`. The most useful settings:
 |---|---|---|
 | `HOTSPOTS_DB_PATH` | `data/hotspots.duckdb` | Which database file to read. Use `data/mock_hotspots.duckdb` for fake data |
 | `API_PORT` | `5000` | Port the API listens on |
-| `API_HOST` | `127.0.0.1` | `127.0.0.1` = only this computer; `0.0.0.0` = other devices on your network too |
-| `CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Websites allowed to call the API from a browser |
+| `API_HOST` | `0.0.0.0` | `0.0.0.0` = this computer **and** other devices on your network; `127.0.0.1` = only this computer |
+| `CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Websites allowed to call the API from a browser (`*` = any website) |
+| `CORS_ALLOW_LAN` | `1` | `1` = also allow pages opened from your local network (e.g. `http://192.168.1.23:5173`); `0` = only `CORS_ORIGINS` |
 | `FLASK_DEBUG` | `0` | `1` reloads the server when code changes (development only) |
 
 ## Step 5. Start the API
@@ -123,8 +124,14 @@ python run.py
 You should see something like:
 
 ```text
- * Running on http://127.0.0.1:5000
+Hotspots API is starting:
+  Local:   http://localhost:5000
+  Network: http://192.168.1.23:5000  <- share this with your team
 ```
+
+- **Local** works only on this computer.
+- **Network** works from any device on the same Wi-Fi or cable network (your own IP will differ).
+  See [Using the API from other devices](#using-the-api-from-other-devices-lan).
 
 Leave this terminal open: the API runs as long as it is open. Press `Ctrl+C` to stop it.
 
@@ -145,13 +152,68 @@ Then try a real query in the browser:
 
 To explore the API comfortably, continue with [postman.md](postman.md).
 
+## Using the API from other devices (LAN)
+
+By default the API is shared on your **local network** (LAN): the Wi-Fi or cable network your
+computer is connected to. Anyone on the same network can use it, which is handy when one laptop
+runs the API and teammates work on the frontend from theirs.
+
+```text
+        same Wi-Fi network (e.g. 192.168.1.x)
+ ┌──────────────────────────────────────────────────┐
+ │  Laptop A (runs the API)     Laptop B / phone     │
+ │  192.168.1.23:5000  ◄─────── http://192.168.1.23:5000/health
+ └──────────────────────────────────────────────────┘
+```
+
+1. **Start the API** with `python run.py` and copy the `Network:` address it prints
+   (e.g. `http://192.168.1.23:5000`).
+2. **On the other device**, open `http://192.168.1.23:5000/health` in a browser.
+   `{"status": "ok", ...}` means it works.
+3. **Use that address everywhere** instead of `localhost`: in Postman (`baseUrl`), `curl`, or the frontend.
+
+### If the other device cannot connect
+
+| Check | How |
+|---|---|
+| Both devices are on the **same network** | Guest Wi-Fi, phone hotspots and university/company networks often block device-to-device traffic. A phone hotspot shared by everyone usually works |
+| The API listens on the LAN | The startup message shows a `Network:` line. If it says "disabled", remove `API_HOST=127.0.0.1` from `.env` |
+| The **firewall** allows port 5000 | See below |
+| You used the right IP | It changes when you switch networks. Restart the API and read the `Network:` line again |
+
+Firewall, on the computer running the API:
+- **Windows:** the first time you run the API, Windows asks whether Python may communicate on networks.
+  Tick **Private networks** and click **Allow**. If you clicked Cancel: *Windows Security → Firewall &
+  network protection → Allow an app through firewall → Python → Private*. Also make sure your Wi-Fi is set
+  as a **Private** network (*Settings → Network & Internet → Wi-Fi → your network → Private*).
+- **macOS:** click **Allow** when asked "accept incoming network connections?". Otherwise:
+  *System Settings → Network → Firewall → Options* and allow Python.
+- **Linux (ufw):** `sudo ufw allow 5000/tcp`
+
+### Frontend on the LAN
+
+For teammates to open the website itself from their devices:
+- Start the Vite dev server so it is reachable on the network: `npm run dev -- --host` (in `client/`).
+- Point the frontend to the API's **Network** address (e.g. `http://192.168.1.23:5000`), not `localhost`:
+  on another device, `localhost` means *that* device, where no API is running.
+
+CORS (the browser's "which websites may call this API" check) is already handled: with
+`CORS_ALLOW_LAN=1` (the default), pages served from `localhost` or any private network address
+(`192.168.x.x`, `10.x.x.x`, `172.16.x.x`–`172.31.x.x`, `<name>.local`) are allowed. Public websites are not.
+
+### Keeping it private
+
+The API has **no password**: everyone on the same network can read the data. That is fine for public
+FIRMS data at a hackathon, but on a network you do not trust, set `API_HOST=127.0.0.1` in `.env`
+(and optionally `CORS_ALLOW_LAN=0`), then restart. The startup message will show `Network: disabled`.
+
 ## Step 7. Run the automated tests
 
 ```bash
 pytest
 ```
 
-All tests should pass (the last line says something like `104 passed`). The tests build
+All tests should pass (the last line says something like `128 passed`). The tests build
 their own tiny database, so they work even if you never loaded any data.
 
 ## Troubleshooting
@@ -162,5 +224,6 @@ their own tiny database, so they work even if you never loaded any data.
 | `ModuleNotFoundError: No module named 'flask'` | The virtual environment is not active | Activate it (Step 2) |
 | `Address already in use` | Another program uses the port | Change `API_PORT` in `.env` |
 | Import script says the file is locked | The API is running | Stop the API (`Ctrl+C`) and import again |
-| Browser shows a CORS error from the client | The client's address is not allowed | Add it to `CORS_ORIGINS` and restart the API |
+| Browser shows a CORS error from the client | The client's address is not allowed (e.g. a public domain, or `CORS_ALLOW_LAN=0`) | Add it to `CORS_ORIGINS` (or set `CORS_ALLOW_LAN=1`) and restart the API |
+| Works on my computer, not on my teammate's | Firewall, different network or wrong IP | See [If the other device cannot connect](#if-the-other-device-cannot-connect) |
 | `python: command not found` | Python is called `python3` on your system | Use `python3` instead of `python` |

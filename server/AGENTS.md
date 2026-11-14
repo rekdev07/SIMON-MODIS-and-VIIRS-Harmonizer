@@ -52,13 +52,14 @@ server/
 │  ├─ repository.py          table DDL + parameterized SQL queries
 │  ├─ serializers.py         rows -> GeoJSON / JSON
 │  ├─ errors.py              API exceptions + global Flask error handlers
+│  ├─ network.py             LAN helpers: private-network CORS pattern, LAN IP discovery
 │  └─ routes/
 │     ├─ hotspots.py         GET /api/v1/hotspots
 │     └─ meta.py             GET /api/v1/dataset, GET /health
 ├─ scripts/
 │  ├─ import_json.py         raw FIRMS JSON -> normalized DuckDB table
 │  └─ generate_mock_data.py  fake but realistic Mexico hotspots
-├─ docs/                     plain-language docs (running, postman + postman/ collection, api, filtering, dates, data-import)
+├─ docs/                     plain-language docs (running + LAN, postman + postman/ collection, api, filtering, dates, data-import)
 ├─ tests/                    pytest suite with its own small known dataset
 ├─ data/                     GITIGNORED: data/raw/*.json and *.duckdb files
 ├─ .env.example, requirements*.txt, pyproject.toml, run.py, README.md
@@ -188,8 +189,19 @@ Total records, min/max `acq_date`, count per instrument, bbox of all data (for f
 
 ## 9. Configuration (`.env.example`)
 
-`HOTSPOTS_DB_PATH`, `CORS_ORIGINS` (default `http://localhost:5173,http://localhost:3000`),
-`DEFAULT_LIMIT` (10000), `MAX_LIMIT` (50000), `API_HOST` (127.0.0.1), `API_PORT` (5000), `FLASK_DEBUG` (0).
+`HOTSPOTS_DB_PATH`, `CORS_ORIGINS` (default `http://localhost:5173,http://localhost:3000`; `*` = any),
+`CORS_ALLOW_LAN` (1), `DEFAULT_LIMIT` (10000), `MAX_LIMIT` (50000), `API_HOST` (0.0.0.0), `API_PORT` (5000), `FLASK_DEBUG` (0).
+
+### LAN access
+
+- The API is meant to be shared on the local network during the hackathon: `API_HOST` defaults
+  to `0.0.0.0` (all interfaces) and `run.py` prints the `Network:` URL to share
+  (`app.network.get_lan_ip()`). `API_HOST=127.0.0.1` makes it local-only.
+- CORS = `CORS_ORIGINS` + (when `CORS_ALLOW_LAN=1`) `app.network.PRIVATE_NETWORK_ORIGIN`, a regex for
+  localhost, 127/8, the RFC 1918 ranges (10/8, 172.16/12, 192.168/16) and `*.local`. Public origins
+  never match it. Built by `app.config.allowed_cors_origins()`.
+- `flask --app app run` ignores `API_HOST`; it needs `--host 0.0.0.0` for LAN access.
+- Remember: there is no authentication, so anyone on the same network can read the data.
 
 ## 10. Running
 
@@ -198,7 +210,7 @@ python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\
 pip install -r requirements-dev.txt
 python scripts/import_json.py data/raw/fire_archive_SV-C2_849193.json --db data/hotspots.duckdb
 # or: python scripts/generate_mock_data.py --db data/mock_hotspots.duckdb
-python run.py                    # or: flask --app app run
+python run.py                    # LAN-ready; or: flask --app app run --host 0.0.0.0
 pytest                           # tests use their own data from tests/conftest.py
 python -m pydoc app.geo          # code docs
 ```
