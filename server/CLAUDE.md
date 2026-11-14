@@ -9,3 +9,5 @@
 - Corners in any order (min/max), inclusive edges, inclusive UTC dates on `acq_date`, `limit + 1` truncation.
 - No results → HTTP 200 + `"message": "No data found in the selected area"` (only then).
 - Run `pytest` from `server/` after every change and keep `docs/` in sync.
+- Git: work on a new branch, commit locally on your own (small commits, co-author trailer);
+  push and open the PR only after the user confirms (AGENTS.md §14).
