@@ -15,7 +15,7 @@ import logging
 from flask import Flask
 from flask_cors import CORS
 
-from app.config import Settings, load_settings
+from app.config import Settings, allowed_cors_origins, load_settings
 from app.db import init_db
 from app.errors import register_error_handlers
 from app.routes import register_blueprints
@@ -25,7 +25,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     """Create and configure the Flask application.
 
     Steps: load settings, configure JSON output, enable CORS for the configured
-    origins, open the read-only database, register error handlers and routes.
+    origins (plus private-network origins when ``CORS_ALLOW_LAN`` is on), open the read-only database, register error handlers and routes.
 
     Why a factory: tests can build an app pointing at a temporary database by
     passing their own :class:`Settings`, without touching environment variables.
@@ -44,7 +44,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     # Keep keys in insertion order so GeoJSON reads naturally ("type" first).
     app.json.sort_keys = False  # type: ignore[attr-defined]
 
-    CORS(app, origins=settings.cors_origins)
+    CORS(app, origins=allowed_cors_origins(settings))
     init_db(app, settings.db_path)
     register_error_handlers(app)
     register_blueprints(app)

@@ -48,10 +48,15 @@ Stop the API while importing (DuckDB allows only one writer and no other open pr
 ## Running the API
 
 ```bash
-python run.py                # http://127.0.0.1:5000
+python run.py                # prints the Local and Network (LAN) addresses
 # or
-flask --app app run
+flask --app app run --host 0.0.0.0
 ```
+
+The API listens on the local network by default, so teammates on the same Wi-Fi can use the
+`Network:` address printed at startup (e.g. `http://192.168.1.23:5000`). Set `API_HOST=127.0.0.1`
+in `.env` to keep it private to your computer. Details, firewall tips and frontend setup:
+[docs/running.md](docs/running.md#using-the-api-from-other-devices-lan).
 
 ## Tests
 

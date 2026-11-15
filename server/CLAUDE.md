@@ -7,6 +7,7 @@
 - English everywhere; Google-style docstrings explaining what/how/why; full type hints.
 - SQL is always parameterized. One read-only connection per app, one cursor per request.
 - Corners in any order (min/max), inclusive edges, inclusive UTC dates on `acq_date`, `limit + 1` truncation.
+- LAN by default: `API_HOST=0.0.0.0`, CORS also allows private-network origins (`CORS_ALLOW_LAN`).
 - No results → HTTP 200 + `"message": "No data found in the selected area"` (only then).
 - Run `pytest` from `server/` after every change and keep `docs/` in sync.
 - Git: work on a new branch, commit locally on your own (small commits, co-author trailer);

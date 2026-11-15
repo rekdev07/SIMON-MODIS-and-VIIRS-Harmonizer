@@ -17,10 +17,13 @@ Example:
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+from app.network import PRIVATE_NETWORK_ORIGIN
 
 #: Absolute path of the ``server/`` directory. Relative paths in the
 #: configuration (such as the database path) are resolved against it, so the
@@ -29,6 +32,9 @@ SERVER_DIR: Path = Path(__file__).resolve().parent.parent
 
 DEFAULT_DB_PATH = "data/hotspots.duckdb"
 DEFAULT_CORS_ORIGINS = "http://localhost:5173,http://localhost:3000"
+#: Listen on every network interface so other devices on the LAN can reach the API.
+#: Use ``API_HOST=127.0.0.1`` to accept connections from this computer only.
+DEFAULT_HOST = "0.0.0.0"
 
 
 @dataclass(frozen=True)
@@ -37,21 +43,56 @@ class Settings:
 
     Attributes:
         db_path: Absolute path to the DuckDB database file.
-        cors_origins: Origins allowed to call the API from a browser.
+        cors_origins: Origins allowed to call the API from a browser
+            (``["*"]`` allows any origin).
+        cors_allow_lan: Also allow any origin on this computer or a private
+            network (see :data:`app.network.PRIVATE_NETWORK_ORIGIN`), so the
+            frontend works when opened from another device on the LAN.
         default_limit: Rows returned by ``/api/v1/hotspots`` when no ``limit`` is sent.
         max_limit: Largest ``limit`` a client may request.
-        host: Interface used by ``run.py``.
+        host: Interface used by ``run.py``: ``0.0.0.0`` = all interfaces (LAN),
+            ``127.0.0.1`` = this computer only.
         port: Port used by ``run.py``.
         debug: Whether ``run.py`` starts Flask in debug mode.
     """
 
     db_path: Path
     cors_origins: list[str] = field(default_factory=list)
+    cors_allow_lan: bool = False
     default_limit: int = 10_000
     max_limit: int = 50_000
-    host: str = "127.0.0.1"
+    host: str = DEFAULT_HOST
     port: int = 5000
     debug: bool = False
+
+
+def allowed_cors_origins(settings: Settings) -> list[str | re.Pattern[str]]:
+    """List what flask-cors should accept as the ``Origin`` of a browser request.
+
+    The result is the explicit ``CORS_ORIGINS`` list plus, when
+    ``cors_allow_lan`` is on, the :data:`~app.network.PRIVATE_NETWORK_ORIGIN`
+    pattern. flask-cors accepts both plain strings (exact match) and compiled
+    regular expressions in the same list, and allows a request if **any** entry
+    matches.
+
+    Why: LAN IPs change with every network, so matching "any private address"
+    keeps the frontend working on teammates' devices without editing ``.env``,
+    while public websites stay blocked.
+
+    Args:
+        settings: The application settings.
+
+    Returns:
+        Origins and patterns for ``flask_cors.CORS(origins=...)``.
+
+    Example:
+        >>> allowed_cors_origins(Settings(db_path=Path("x"), cors_origins=["http://a.com"]))
+        ['http://a.com']
+    """
+    origins: list[str | re.Pattern[str]] = list(settings.cors_origins)
+    if settings.cors_allow_lan:
+        origins.append(PRIVATE_NETWORK_ORIGIN)
+    return origins
 
 
 def resolve_path(raw_path: str | os.PathLike[str]) -> Path:
@@ -137,9 +178,10 @@ def load_settings() -> Settings:
     return Settings(
         db_path=resolve_path(os.getenv("HOTSPOTS_DB_PATH", DEFAULT_DB_PATH)),
         cors_origins=_parse_origins(os.getenv("CORS_ORIGINS", DEFAULT_CORS_ORIGINS)),
+        cors_allow_lan=_parse_bool(os.getenv("CORS_ALLOW_LAN", "1")),
         default_limit=default_limit,
         max_limit=max_limit,
-        host=os.getenv("API_HOST", "127.0.0.1"),
+        host=os.getenv("API_HOST", DEFAULT_HOST),
         port=_parse_positive_int("API_PORT", os.getenv("API_PORT", "5000")),
         debug=_parse_bool(os.getenv("FLASK_DEBUG", "0")),
     )

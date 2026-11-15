@@ -5,6 +5,8 @@ reading the answers, without writing code. This guide shows how to try every end
 
 **Before you start:** the API must be running (see [running.md](running.md)).
 Open <http://localhost:5000/health> in a browser: if you see `"status": "ok"`, you are ready.
+Using Postman on a **different computer** from the API? Replace `localhost` with the API's LAN address
+everywhere in this guide (for example `http://192.168.1.23:5000`).
 
 ## Fastest way: import the ready-made collection
 
@@ -20,8 +22,13 @@ server/docs/postman/hotspots-api.postman_collection.json
 3. A collection named **Hotspots API** appears in the left sidebar.
 4. Open any request and click **Send**.
 
-The collection uses a variable called `baseUrl` (default `http://localhost:5000`). If your API
-runs on another port, click the collection → **Variables** tab → change `baseUrl` → **Save**.
+The collection uses a variable called `baseUrl` (default `http://localhost:5000`). Change it when:
+
+- **Postman runs on another computer** than the API: use the `Network:` address printed when the API
+  starts, e.g. `http://192.168.1.23:5000` (see [running.md](running.md#using-the-api-from-other-devices-lan)).
+- **The API uses another port**, e.g. `http://localhost:5001`.
+
+To change it: click the collection → **Variables** tab → edit `baseUrl` → **Save**. Every request uses it.
 
 ### Run all requests at once
 
@@ -175,5 +182,7 @@ Every error has the same shape, so it is easy to handle in the frontend:
 - **Share with the team:** collection **⋯ → Export** creates a `.json` file anyone can import.
 - **Large answers:** without `limit`, a big box can return up to 10,000 hotspots. Postman handles it, but
   it is slow to scroll. Use `limit=5` while exploring.
+- **"Could not send request" / connection refused from another computer?** It is a network issue, not the API:
+  see [If the other device cannot connect](running.md#if-the-other-device-cannot-connect).
 - **Status 503 everywhere?** The API cannot open the database. Check [running.md](running.md#troubleshooting).
 - **Prefer the terminal?** Every request here also has a `curl` version in [api.md](api.md).
