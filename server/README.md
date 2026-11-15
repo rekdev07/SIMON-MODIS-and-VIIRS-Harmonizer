@@ -73,6 +73,7 @@ Every module has Google-style docstrings readable with pydoc:
 ```bash
 python -m pydoc app.geo
 python -m pydoc app.repository
+python -m pydoc app.stats_repository
 python -m pydoc scripts.import_json
 ```
 
@@ -93,11 +94,19 @@ curl "http://localhost:5000/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=
 
 # An area with no data → 200 + "No data found in the selected area"
 curl "http://localhost:5000/api/v1/hotspots?lat1=40&lon1=0&lat2=41&lon2=1&start_date=2013-04-01&end_date=2013-04-30"
+
+# Dashboard statistics (Durango, 2013): KPIs per sensor, weekly series, FRP histogram
+curl "http://localhost:5000/api/v1/stats/summary?lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31"
+curl "http://localhost:5000/api/v1/stats/timeseries?freq=week&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31"
+curl "http://localhost:5000/api/v1/stats/distribution?field=frp&bins=20&log=true&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31"
 ```
+
+All 13 `/api/v1/stats/*` endpoints (one per group of dashboard charts) are described in
+[docs/dashboard-api.md](docs/dashboard-api.md).
 
 ## More documentation
 
 See [`docs/`](docs/README.md): [step-by-step setup](docs/running.md), [testing with Postman](docs/postman.md)
-(collection in `docs/postman/`), [API reference](docs/api.md), [filtering](docs/filtering.md),
+(collection in `docs/postman/`), [API reference](docs/api.md), [dashboard statistics](docs/dashboard-api.md), [filtering](docs/filtering.md),
 [dates](docs/dates.md) and [data import](docs/data-import.md). Developer rules are in
 [`AGENTS.md`](AGENTS.md).
