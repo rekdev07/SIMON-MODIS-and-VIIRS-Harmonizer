@@ -1,6 +1,10 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, Suspense, lazy, useState } from 'react'
 import SideBar from '../components/ScreenViewer/SideBar'
 import HotspotMap from '../components/ScreenViewer/Map'
+import ViewToggle, {
+  type MainView,
+} from '../components/ScreenViewer/ViewToggle'
+import type { DashboardArea } from './Dashboard'
 import TextField from '../components/fields/TextField'
 import DatePicker from '../components/fields/DatePicker'
 import Button from '../components/landing/Buttons'
@@ -10,10 +14,19 @@ import { useDataset } from '../hooks/useDataset'
 import { useCalendar } from '../hooks/useCalendar'
 import BurnCalendar from '../components/Calendar/BurnCalendar'
 import { type Bounds, type LatLngPoint } from '../types/hotspots'
+import {
+  DEFAULT_STATS_FILTERS,
+  type Sensor,
+  type StatsFilters,
+} from '../types/stats'
 import { formatLatLng, parseLatLng, todayUtc } from '../utils/coordinates'
 
 /** First day with satellite data (start of MODIS); the API rejects earlier dates. */
 const API_MIN_DATE = '2000-11-01'
+
+// Loaded on first use: the dashboard pulls in the charting library (ECharts),
+// so the map view does not pay for it.
+const Dashboard = lazy(() => import('./Dashboard'))
 
 const GEO_STATUS_TEXT = {
   locating: 'Looking for your location…',
@@ -40,14 +53,31 @@ function MapViewer() {
   // Area the calendar was loaded for; clicks on the calendar search this area
   // even if the user has started drawing a new one.
   const [calendarBounds, setCalendarBounds] = useState<Bounds | null>(null)
+  // Sensor of the calendar. MODIS and VIIRS counts are never added together
+  // (different pixel sizes), so the calendar shows one sensor at a time. Until
+  // the user picks one, default to MODIS (the long record since 2000) when it
+  // is loaded, otherwise VIIRS.
+  const [calendarSensorChoice, setCalendarSensorChoice] =
+    useState<Sensor | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<{
     year: number
     month: number
   } | null>(null)
 
+  // Main area: map or dashboard. The dashboard uses the area and dates last
+  // applied with Save, so editing the form does not refetch 21 charts per keystroke.
+  const [view, setView] = useState<MainView>('map')
+  const [dashboardArea, setDashboardArea] = useState<DashboardArea | null>(null)
+  const [statsFilters, setStatsFilters] = useState<StatsFilters>(
+    DEFAULT_STATS_FILTERS,
+  )
+
   const center = manualCenter ?? geo.position
   const coordsValue = coordsText ?? formatLatLng(geo.position)
   const parsedCoords = parseLatLng(coordsValue)
+
+  const calendarSensor: Sensor =
+    calendarSensorChoice ?? (dataset?.instruments.MODIS ? 'MODIS' : 'VIIRS')
 
   const minDate = dataset?.min_date ?? API_MIN_DATE
   const maxDate = dataset?.max_date ?? todayUtc()
@@ -86,9 +116,23 @@ function MapViewer() {
     e.preventDefault()
     if (!canSave || !bounds) return
     hotspots.search({ bounds, startDate, endDate })
-    calendar.load(bounds)
+    setDashboardArea({ bounds, startDate, endDate })
+    calendar.load(bounds, calendarSensor)
     setCalendarBounds(bounds)
     setSelectedMonth(null)
+  }
+
+  /** Reloads the calendar of the same area for the other sensor. */
+  const changeCalendarSensor = (sensor: Sensor) => {
+    setCalendarSensorChoice(sensor)
+    if (calendarBounds) calendar.load(calendarBounds, sensor)
+  }
+
+  // Drawing happens on the map, so starting to draw from the dashboard view
+  // switches back to the map first.
+  const toggleDrawMode = () => {
+    if (!drawMode) setView('map')
+    setDrawMode(!drawMode)
   }
 
   /**
@@ -119,7 +163,8 @@ function MapViewer() {
   return (
     <div className="grid h-screen grid-cols-[300px_1fr] bg-gray-300">
       <SideBar>
-        <h1 className="mb-6 text-xl font-bold">SIMON</h1>
+        <h1 className="mb-3 text-xl font-bold">SIMON</h1>
+        <ViewToggle view={view} onChange={setView} />
         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
           <p>Step 1. Choose a place</p>
           <TextField
@@ -157,7 +202,7 @@ function MapViewer() {
             </p>
           )}
           <div className="flex gap-2">
-            <Button onClick={() => setDrawMode(!drawMode)}>
+            <Button onClick={toggleDrawMode}>
               {drawMode ? 'Cancel' : bounds ? 'Redraw area' : 'Draw area'}
             </Button>
             <Button onClick={() => setBounds(null)} disabled={!bounds}>
@@ -214,37 +259,55 @@ function MapViewer() {
         </form>
       </SideBar>
 
-      <div className="flex h-screen min-w-0 flex-col">
-        <div className="min-h-0 flex-1">
-          <HotspotMap
-            center={center}
-            flyRequestId={flyRequestId}
-            bounds={bounds}
-            onBoundsChange={setBounds}
-            drawMode={drawMode}
-            onDrawModeChange={setDrawMode}
-            onLocate={useMyLocation}
-            hotspots={data?.features ?? []}
-          />
-        </div>
-        {showCalendarPanel && (
-          <div className="max-h-[50vh] shrink-0 overflow-y-auto border-t border-gray-300 bg-gray-50 p-4">
-            {calendar.loading && !calendar.data && (
-              <p className="text-sm text-gray-600">Loading calendar…</p>
-            )}
-            {calendar.error && (
-              <p className="text-sm text-red-600">{calendar.error}</p>
-            )}
-            {calendar.data && (
-              <BurnCalendar
-                data={calendar.data}
-                selected={selectedMonth}
-                onSelectMonth={selectMonth}
-              />
-            )}
+      {view === 'map' ? (
+        <div className="flex h-screen min-w-0 flex-col">
+          <div className="min-h-0 flex-1">
+            <HotspotMap
+              center={center}
+              flyRequestId={flyRequestId}
+              bounds={bounds}
+              onBoundsChange={setBounds}
+              drawMode={drawMode}
+              onDrawModeChange={setDrawMode}
+              onLocate={useMyLocation}
+              hotspots={data?.features ?? []}
+            />
           </div>
-        )}
-      </div>
+          {showCalendarPanel && (
+            <div className="max-h-[50vh] shrink-0 overflow-y-auto border-t border-gray-300 bg-gray-50 p-4">
+              {calendar.loading && !calendar.data && (
+                <p className="text-sm text-gray-600">Loading calendar…</p>
+              )}
+              {calendar.error && (
+                <p className="text-sm text-red-600">{calendar.error}</p>
+              )}
+              {calendar.data && (
+                <BurnCalendar
+                  data={calendar.data}
+                  selected={selectedMonth}
+                  onSelectMonth={selectMonth}
+                  sensor={calendarSensor}
+                  onSensorChange={changeCalendarSensor}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <Suspense
+          fallback={
+            <p className="flex h-screen items-center justify-center text-sm text-gray-500">
+              Loading dashboard…
+            </p>
+          }
+        >
+          <Dashboard
+            area={dashboardArea}
+            filters={statsFilters}
+            onFiltersChange={setStatsFilters}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }

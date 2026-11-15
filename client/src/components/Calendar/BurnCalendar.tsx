@@ -11,7 +11,9 @@ import {
   stepFor,
 } from '../../utils/calendarScale'
 import { buildCalendarCsv, downloadText } from '../../utils/calendarCsv'
+import { type Sensor } from '../../types/stats'
 import LegendSwatch from './LegendSwatch'
+import Segmented from './Segmented'
 
 const MONTH_LABELS = [
   'Jan',
@@ -47,15 +49,25 @@ type BurnCalendarProps = {
   selected: { year: number; month: number } | null
   /** Called when the user clicks a month with data. */
   onSelectMonth: (year: number, month: number) => void
+  /** Sensor the counts belong to (the calendar never adds MODIS and VIIRS). */
+  sensor: Sensor
+  onSensorChange: (sensor: Sensor) => void
 }
+
+const SENSOR_OPTIONS = [
+  ['MODIS', 'MODIS'],
+  ['VIIRS', 'VIIRS'],
+] as const
+
+const MODE_OPTIONS = [
+  ['counts', 'Counts'],
+  ['anomaly', 'vs. median'],
+] as const
 
 /** Text describing one month, used for the hover line and `title`. */
 function describe(m: CalendarMonth, median: number | null): string {
   const name = `${MONTH_LABELS[m.month - 1]} ${m.year}`
-  const parts = [
-    `${name}: ${m.count.toLocaleString()} hotspots`,
-    `MODIS ${m.modis.toLocaleString()} · VIIRS ${m.viirs.toLocaleString()}`,
-  ]
+  const parts = [`${name}: ${m.count.toLocaleString()} hotspots`]
   if (m.partial) {
     parts.push('partial month (only some days loaded)')
   } else if (median !== null) {
@@ -81,8 +93,18 @@ function describe(m: CalendarMonth, median: number | null): string {
  * Honesty rules: hatched gray = no data loaded (different from a light "0"
  * cell, which means observed with no fires); light hatching over a color =
  * partial month, left out of medians and anomalies.
+ *
+ * One sensor at a time: MODIS (1 km pixels) and VIIRS (375 m) counts are not
+ * comparable, so adding them would invent a jump in 2012 when VIIRS started.
+ * The sensor switch reloads the calendar for the other sensor.
  */
-function BurnCalendar({ data, selected, onSelectMonth }: BurnCalendarProps) {
+function BurnCalendar({
+  data,
+  selected,
+  onSelectMonth,
+  sensor,
+  onSensorChange,
+}: BurnCalendarProps) {
   const [mode, setMode] = useState<Mode>('counts')
   const [hovered, setHovered] = useState<CalendarMonth | null>(null)
 
@@ -132,8 +154,8 @@ function BurnCalendar({ data, selected, onSelectMonth }: BurnCalendarProps) {
   const download = () => {
     const [w, s, e, n] = data.bbox
     downloadText(
-      `burn-calendar_${s}_${w}_${n}_${e}.csv`,
-      buildCalendarCsv(data),
+      `burn-calendar_${sensor}_${s}_${w}_${n}_${e}.csv`,
+      buildCalendarCsv(data, sensor),
     )
   }
 
@@ -148,44 +170,29 @@ function BurnCalendar({ data, selected, onSelectMonth }: BurnCalendarProps) {
         <div>
           <h2 className="text-base font-bold">Burning activity calendar</h2>
           <p className="text-xs text-gray-600">
-            Hotspots per month in the selected area
+            {sensor} hotspots per month in the selected area
             {data.coverage &&
               ` · data from ${data.coverage.start_date} to ${data.coverage.end_date}`}
           </p>
           {!data.harmonized && (
             <p className="mt-1 inline-block rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
-              Raw MODIS + VIIRS counts (not harmonized yet)
+              Not harmonized yet: MODIS and VIIRS are shown separately
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div
-            role="radiogroup"
-            aria-label="Color by"
-            className="flex rounded-lg bg-gray-200 p-0.5 text-xs"
-          >
-            {(
-              [
-                ['counts', 'Counts'],
-                ['anomaly', 'vs. median'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={mode === value}
-                onClick={() => setMode(value)}
-                className={`rounded-md px-3 py-1 transition ${
-                  mode === value
-                    ? 'bg-white font-semibold shadow'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Segmented
+            label="Sensor"
+            options={SENSOR_OPTIONS}
+            value={sensor}
+            onChange={onSensorChange}
+          />
+          <Segmented
+            label="Color by"
+            options={MODE_OPTIONS}
+            value={mode}
+            onChange={setMode}
+          />
           <button
             type="button"
             onClick={download}
@@ -195,6 +202,14 @@ function BurnCalendar({ data, selected, onSelectMonth }: BurnCalendarProps) {
           </button>
         </div>
       </header>
+
+      {data.message && (
+        <p className="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-700">
+          {data.coverage
+            ? `${data.message} for ${sensor}.`
+            : `No ${sensor} data is loaded in the database yet.`}
+        </p>
+      )}
 
       {latestFull && (
         <p className="rounded-lg bg-gray-100 px-3 py-2 text-xs">
@@ -221,140 +236,146 @@ function BurnCalendar({ data, selected, onSelectMonth }: BurnCalendarProps) {
         </p>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] border-separate border-spacing-0.5 text-xs">
-          <thead>
-            <tr>
-              <th className="w-12" />
-              {MONTH_LABELS.map((label) => (
-                <th key={label} className="font-medium text-gray-500">
-                  {label}
-                </th>
-              ))}
-              <th className="pl-2 text-left font-medium text-gray-500">
-                Year total
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {yearList.map((year) => (
-              <tr key={year.year}>
-                <th className="pr-1 text-right font-medium text-gray-600">
-                  {year.year}
-                </th>
-                {MONTH_LABELS.map((label, i) => {
-                  const m = byKey.get(`${year.year}-${i + 1}`)
-                  if (!m) {
-                    return (
-                      <td
-                        key={label}
-                        className="h-7 rounded"
-                        style={NO_DATA_STYLE}
-                        title={`${label} ${year.year}: no data loaded`}
-                      />
-                    )
-                  }
-                  const isSelected =
-                    selected?.year === m.year && selected.month === m.month
-                  const text = describe(m, data.monthly_median[i])
-                  return (
-                    <td key={label} className="h-7 p-0">
-                      <button
-                        type="button"
-                        onClick={() => onSelectMonth(m.year, m.month)}
-                        onMouseEnter={() => setHovered(m)}
-                        onMouseLeave={() => setHovered(null)}
-                        onFocus={() => setHovered(m)}
-                        onBlur={() => setHovered(null)}
-                        title={text}
-                        aria-label={`${text}. Show on map.`}
-                        className={`h-full w-full rounded tabular-nums transition hover:ring-2 hover:ring-gray-800 ${
-                          isSelected ? 'ring-2 ring-blue-600' : ''
-                        }`}
-                        style={cellStyle(m)}
-                      >
-                        {m.count > 0 ? formatCount(m.count) : ''}
-                      </button>
+      {data.months.length > 0 && (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] border-separate border-spacing-0.5 text-xs">
+              <thead>
+                <tr>
+                  <th className="w-12" />
+                  {MONTH_LABELS.map((label) => (
+                    <th key={label} className="font-medium text-gray-500">
+                      {label}
+                    </th>
+                  ))}
+                  <th className="pl-2 text-left font-medium text-gray-500">
+                    Year total
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {yearList.map((year) => (
+                  <tr key={year.year}>
+                    <th className="pr-1 text-right font-medium text-gray-600">
+                      {year.year}
+                    </th>
+                    {MONTH_LABELS.map((label, i) => {
+                      const m = byKey.get(`${year.year}-${i + 1}`)
+                      if (!m) {
+                        return (
+                          <td
+                            key={label}
+                            className="h-7 rounded"
+                            style={NO_DATA_STYLE}
+                            title={`${label} ${year.year}: no data loaded`}
+                          />
+                        )
+                      }
+                      const isSelected =
+                        selected?.year === m.year && selected.month === m.month
+                      const text = describe(m, data.monthly_median[i])
+                      return (
+                        <td key={label} className="h-7 p-0">
+                          <button
+                            type="button"
+                            onClick={() => onSelectMonth(m.year, m.month)}
+                            onMouseEnter={() => setHovered(m)}
+                            onMouseLeave={() => setHovered(null)}
+                            onFocus={() => setHovered(m)}
+                            onBlur={() => setHovered(null)}
+                            title={text}
+                            aria-label={`${text}. Show on map.`}
+                            className={`h-full w-full rounded tabular-nums transition hover:ring-2 hover:ring-gray-800 ${
+                              isSelected ? 'ring-2 ring-blue-600' : ''
+                            }`}
+                            style={cellStyle(m)}
+                          >
+                            {m.count > 0 ? formatCount(m.count) : ''}
+                          </button>
+                        </td>
+                      )
+                    })}
+                    <td className="pl-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-3 rounded-sm bg-gray-500"
+                          style={{ width: `${(year.count / maxYear) * 80}px` }}
+                        />
+                        <span className="text-gray-700 tabular-nums">
+                          {year.count.toLocaleString()}
+                          {year.partial && (
+                            <span className="text-gray-400"> (partial)</span>
+                          )}
+                        </span>
+                      </div>
                     </td>
-                  )
-                })}
-                <td className="pl-2">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-3 rounded-sm bg-gray-500"
-                      style={{ width: `${(year.count / maxYear) * 80}px` }}
-                    />
-                    <span className="text-gray-700 tabular-nums">
-                      {year.count.toLocaleString()}
-                      {year.partial && (
-                        <span className="text-gray-400"> (partial)</span>
-                      )}
-                    </span>
-                  </div>
-                </td>
-              </tr>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th className="pt-1 pr-1 text-right font-semibold text-gray-600">
+                    Median
+                  </th>
+                  {data.monthly_median.map((value, i) => (
+                    <td
+                      key={MONTH_LABELS[i]}
+                      className="pt-1 text-center font-semibold text-gray-700 tabular-nums"
+                    >
+                      {value === null ? '–' : formatCount(value)}
+                    </td>
+                  ))}
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <p className="min-h-4 text-xs text-gray-600" aria-live="polite">
+            {hovered
+              ? describe(hovered, data.monthly_median[hovered.month - 1])
+              : 'Hover a month for details; click it to show its hotspots on the map.'}
+          </p>
+
+          {mode === 'anomaly' && !hasMedian && (
+            <p className="text-xs text-amber-700">
+              No full month is loaded yet, so there is no median to compare
+              with.
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
+            <span className="font-semibold">
+              {mode === 'counts' ? 'Hotspots' : 'Count ÷ monthly median'}
+            </span>
+            <LegendSwatch color={ZERO_COLOR} label="0" />
+            {(mode === 'counts' ? countScale : ANOMALY_SCALE).map((step) => (
+              <LegendSwatch
+                key={step.label}
+                color={step.color}
+                label={step.label}
+              />
             ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th className="pt-1 pr-1 text-right font-semibold text-gray-600">
-                Median
-              </th>
-              {data.monthly_median.map((value, i) => (
-                <td
-                  key={MONTH_LABELS[i]}
-                  className="pt-1 text-center font-semibold text-gray-700 tabular-nums"
-                >
-                  {value === null ? '–' : formatCount(value)}
-                </td>
-              ))}
-              <td />
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <p className="min-h-4 text-xs text-gray-600" aria-live="polite">
-        {hovered
-          ? describe(hovered, data.monthly_median[hovered.month - 1])
-          : 'Hover a month for details; click it to show its hotspots on the map.'}
-      </p>
-
-      {mode === 'anomaly' && !hasMedian && (
-        <p className="text-xs text-amber-700">
-          No full month is loaded yet, so there is no median to compare with.
-        </p>
+            {mode === 'anomaly' && (
+              <LegendSwatch color={NO_REFERENCE_COLOR} label="No reference" />
+            )}
+            <span className="flex items-center gap-1">
+              <span className="h-3 w-4 rounded-sm" style={NO_DATA_STYLE} /> No
+              data
+            </span>
+            <span className="flex items-center gap-1">
+              <span
+                className="h-3 w-4 rounded-sm"
+                style={{
+                  backgroundColor: '#fd8d3c',
+                  backgroundImage: PARTIAL_OVERLAY,
+                }}
+              />{' '}
+              Partial month
+            </span>
+          </div>
+        </>
       )}
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
-        <span className="font-semibold">
-          {mode === 'counts' ? 'Hotspots' : 'Count ÷ monthly median'}
-        </span>
-        <LegendSwatch color={ZERO_COLOR} label="0" />
-        {(mode === 'counts' ? countScale : ANOMALY_SCALE).map((step) => (
-          <LegendSwatch
-            key={step.label}
-            color={step.color}
-            label={step.label}
-          />
-        ))}
-        {mode === 'anomaly' && (
-          <LegendSwatch color={NO_REFERENCE_COLOR} label="No reference" />
-        )}
-        <span className="flex items-center gap-1">
-          <span className="h-3 w-4 rounded-sm" style={NO_DATA_STYLE} /> No data
-        </span>
-        <span className="flex items-center gap-1">
-          <span
-            className="h-3 w-4 rounded-sm"
-            style={{
-              backgroundColor: '#fd8d3c',
-              backgroundImage: PARTIAL_OVERLAY,
-            }}
-          />{' '}
-          Partial month
-        </span>
-      </div>
     </section>
   )
 }

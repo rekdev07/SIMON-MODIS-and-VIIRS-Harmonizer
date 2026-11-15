@@ -35,6 +35,7 @@ inside `client/`.
 | Build / dev server | **Vite** (dev server http://localhost:5173)                                                                            |
 | Styling            | **Tailwind CSS v4** via `@tailwindcss/vite`, imported in `src/index.css`                                               |
 | Maps               | **Leaflet** + **react-leaflet**                                                                                        |
+| Charts             | **Apache ECharts** (`echarts`, tree-shaken via `echarts/core`), wrapped in `components/dashboard/EChart.tsx`           |
 | Lint               | **ESLint** flat config (`eslint.config.js`): JS + typescript-eslint + react-hooks + react-refresh, Prettier-compatible |
 | Format             | **Prettier** (`.prettierrc.json`): no semicolons, single quotes, trailing commas, width 80, Tailwind class sorting     |
 | Config             | Vite env vars (`VITE_*`) from `.env` / `.env.local`                                                                    |
@@ -53,10 +54,11 @@ client/
 │  ├─ main.tsx               React root: StrictMode + global CSS + <App />
 │  ├─ App.tsx                top-level component / page switch
 │  ├─ index.css              Tailwind import and global styles
-│  ├─ pages/                 one component per screen (e.g. MapViewer.tsx)
+│  ├─ pages/                 one component per screen (MapViewer.tsx, Dashboard.tsx)
 │  └─ components/
 │     ├─ landing/            components of the landing page (Navbar.tsx)
-│     └─ ScreenViewer/       components of the map viewer (Map.tsx, SideBar.tsx)
+│     ├─ ScreenViewer/       components of the map viewer (Map.tsx, SideBar.tsx, ViewToggle.tsx)
+│     └─ dashboard/          the 25 dashboard charts, ChartCard, EChart wrapper, filters
 ├─ eslint.config.js, .prettierrc.json, .prettierignore
 ├─ vite.config.ts, tsconfig*.json
 └─ package.json, package-lock.json, README.md
@@ -137,8 +139,21 @@ and this section.
   no full month), `coverage`, `harmonized` (false for now), `total`; `message` only when `total` is 0.
 - A month **missing** from `months` = no data loaded (draw hatched); `count: 0` = observed, no fires.
   `partial` months are left out of medians and anomalies.
-- Drawn by `components/Calendar/BurnCalendar.tsx` (year × month heatmap, YlOrRd counts / RdBu
-  anomaly vs median, CSV export); clicking a month searches that month's hotspots on the map.
+- Drawn by `components/Calendar/BurnCalendar.tsx` in a panel under the map (year × month heatmap,
+  YlOrRd counts / RdBu anomaly vs median, CSV export); clicking a month searches that month's
+  hotspots on the map. The UI **always sends `instrument`** (MODIS | VIIRS switch, MODIS by default
+  when loaded) so the two sensors are never added together before harmonization.
+- Not the dashboard's chart 11 (`/stats/calendar`, year × day within the saved dates): this one
+  always covers the whole loaded history, by month, with medians.
+
+### `GET /api/v1/stats/*` (dashboard)
+
+Contract: `server/docs/dashboard-api.md`. The dashboard (`pages/Dashboard.tsx`) is shown
+with the toggle under the SIMON title and uses the area and dates applied with **Save**
+plus its own filter row. Types in `src/types/stats.ts`, requests in `src/api/stats.ts`,
+one `useStats(endpoint, query, options)` call per chart (re-fetches when they change,
+aborts stale requests). Never add MODIS and VIIRS counts in the UI: one series per sensor.
+The dashboard is lazy-loaded so ECharts is not in the map's bundle.
 
 ### Other endpoints
 

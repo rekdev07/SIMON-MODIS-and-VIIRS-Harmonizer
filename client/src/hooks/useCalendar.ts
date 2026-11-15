@@ -3,6 +3,7 @@ import { fetchCalendar } from '../api/calendar'
 import { ApiRequestError } from '../api/client'
 import { type CalendarData } from '../types/calendar'
 import { type Bounds } from '../types/hotspots'
+import { type Sensor } from '../types/stats'
 
 /** Value returned by {@link useCalendar}. */
 export type UseCalendarResult = {
@@ -10,8 +11,8 @@ export type UseCalendarResult = {
   loading: boolean
   /** User-facing error message, or null. */
   error: string | null
-  /** Loads the calendar of `bounds`, aborting any request still in flight. */
-  load: (bounds: Bounds) => void
+  /** Loads the calendar of `bounds` for one sensor, aborting any request still in flight. */
+  load: (bounds: Bounds, sensor: Sensor) => void
 }
 
 /**
@@ -26,14 +27,14 @@ export function useCalendar(): UseCalendarResult {
 
   useEffect(() => () => controllerRef.current?.abort(), [])
 
-  const load = useCallback((bounds: Bounds) => {
+  const load = useCallback((bounds: Bounds, sensor: Sensor) => {
     controllerRef.current?.abort()
     const controller = new AbortController()
     controllerRef.current = controller
 
     setLoading(true)
     setError(null)
-    fetchCalendar(bounds, controller.signal)
+    fetchCalendar(bounds, sensor, controller.signal)
       .then((result) => setData(result))
       .catch((err: unknown) => {
         if (controller.signal.aborted) return

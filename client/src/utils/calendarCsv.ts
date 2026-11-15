@@ -1,23 +1,23 @@
 import { type CalendarData } from '../types/calendar'
+import { type Sensor } from '../types/stats'
 import { anomalyRatio } from './calendarScale'
 
 /**
- * Builds a CSV of the calendar: one row per loaded month with its count,
- * the MODIS/VIIRS split, the median for that month and the ratio to it.
- * Empty fields mean "not available" (no median yet).
+ * Builds a CSV of the calendar of one sensor: one row per loaded month with
+ * its count, the median for that month and the ratio to it. Empty fields
+ * mean "not available" (no median yet).
  */
-export function buildCalendarCsv(data: CalendarData): string {
+export function buildCalendarCsv(data: CalendarData, sensor: Sensor): string {
   const header =
-    'year,month,count,modis,viirs,partial,monthly_median,ratio_to_median'
+    'sensor,year,month,count,partial,monthly_median,ratio_to_median'
   const lines = data.months.map((m) => {
     const median = data.monthly_median[m.month - 1]
     const ratio = m.partial ? null : anomalyRatio(m.count, median)
     return [
+      sensor,
       m.year,
       m.month,
       m.count,
-      m.modis,
-      m.viirs,
       m.partial,
       median ?? '',
       ratio === null ? '' : ratio.toFixed(3),
