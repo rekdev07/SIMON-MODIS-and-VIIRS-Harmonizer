@@ -341,6 +341,7 @@ class CalendarQueryParams(BaseModel):
     daynight: DayNight | None = None
     instrument: Instrument | None = None
     vegetation_only: bool = False
+    harmonized: bool = False
 
     @field_validator("confidence_min", mode="before")
     @classmethod
@@ -367,6 +368,8 @@ class CalendarQuery(BaseModel):
         daynight: ``"D"``, ``"N"`` or None for both.
         instrument: ``"MODIS"``, ``"VIIRS"`` or None for both.
         vegetation_only: Exclude ``fire_type`` 1, 2 and 3 (keeping NULL).
+        harmonized: Return the harmonized series (MODIS Terra+Aqua units)
+            instead of raw counts per sensor.
     """
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
@@ -376,6 +379,7 @@ class CalendarQuery(BaseModel):
     daynight: DayNight | None
     instrument: Instrument | None
     vegetation_only: bool
+    harmonized: bool = False
 
 
 def parse_calendar_query(args: dict[str, Any]) -> CalendarQuery:
@@ -384,6 +388,11 @@ def parse_calendar_query(args: dict[str, Any]) -> CalendarQuery:
     How: per-field validation with :class:`CalendarQueryParams`, then
     rectangle normalization with :func:`app.geo.normalize_rectangle`
     (corners in any order, non-degenerate box).
+
+    ``harmonized=true`` combines both sensors with ratios fitted on all
+    confidences, both day and night, vegetation fires only. So it cannot be
+    mixed with ``instrument``, ``daynight`` or ``confidence_min`` (400), and
+    the vegetation filter is always applied.
 
     Args:
         args: Query parameters (first value of each key).
@@ -402,10 +411,20 @@ def parse_calendar_query(args: dict[str, Any]) -> CalendarQuery:
         bbox = normalize_rectangle(params.lat1, params.lon1, params.lat2, params.lon2)
     except RectangleError as exc:
         raise InvalidParameterError(exc.parameter, exc.message) from None
+    if params.harmonized:
+        for name, value, default in (("instrument", params.instrument, None),
+                                     ("daynight", params.daynight, None),
+                                     ("confidence_min", params.confidence_min, "low")):
+            if value != default:
+                raise InvalidParameterError(
+                    name, f"'{name}' cannot be combined with harmonized=true "
+                    "(the harmonized series always uses both sensors, day and night, all confidences)"
+                )
     return CalendarQuery(
         bbox=bbox,
         confidence_min=params.confidence_min,
         daynight=params.daynight,
         instrument=params.instrument,
-        vegetation_only=params.vegetation_only,
+        vegetation_only=params.vegetation_only or params.harmonized,
+        harmonized=params.harmonized,
     )

@@ -11,6 +11,7 @@ Plain-language docs for the backend in `server/`. No satellite background needed
 | [filtering.md](filtering.md) | How two corners become a rectangle, how each filter works, pagination |
 | [dates.md](dates.md) | Why everything is UTC, why both dates are inclusive, the "midnight" case |
 | [data-import.md](data-import.md) | How the raw FIRMS JSON is cleaned and loaded into DuckDB |
+| [harmonization.md](harmonization.md) | How MODIS and VIIRS counts become one continuous series, and how reliable it is |
 
 ## 30-second glossary
 

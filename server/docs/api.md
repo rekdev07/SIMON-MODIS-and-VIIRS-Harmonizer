@@ -138,6 +138,7 @@ per year) even when the area has millions of detections, and it never truncates.
 |---|---|---|---|---|
 | `lat1`, `lon1`, `lat2`, `lon2` | yes | same as `/hotspots` | | Rectangle corners, any order |
 | `confidence_min`, `daynight`, `instrument`, `vegetation_only` | no | same as `/hotspots` | | Same filters as `/hotspots` |
+| `harmonized` | no | `true` / `false` | `false` | One continuous series in MODIS Terra+Aqua units (see below). Cannot be combined with `instrument`, `daynight` or `confidence_min` (400) |
 
 There are **no dates**: the calendar always covers every loaded month, so the user can
 compare the whole history of the area.
@@ -182,10 +183,34 @@ How to read it:
   **full** months only, or `null` if there is none. It is the "normal" level to compare the
   current month against. The median is used rather than the mean so one extreme year does
   not shift the reference.
-- **`harmonized`** is `false`: counts are raw MODIS + VIIRS detections. It will become
-  `true` once the harmonizer calibrates both sensors.
+- **`harmonized`** is `false`: counts are raw detections (use `instrument` to keep one sensor;
+  MODIS and VIIRS raw counts are not comparable).
 - If the area has no hotspots at all, `total` is 0, the months are still listed with zeros,
   and `"message": "No data found in the selected area"` is added.
+
+### Harmonized calendar (`harmonized=true`)
+
+```bash
+curl "http://localhost:5000/api/v1/calendar?lat1=14&lon1=-118&lat2=33&lon2=-86&harmonized=true"
+```
+
+Same shape, but `count` is the **harmonized value** (MODIS Terra+Aqua units, one decimal,
+vegetation fires only) and each month adds where it comes from (method in
+[harmonization.md](harmonization.md)):
+
+```json
+{ "year": 2012, "month": 3, "count": 3778.6, "modis": 3756, "viirs": 16338, "partial": false,
+  "source": "average", "modis_eq": 3801.2, "terra": 1698, "aqua": 2058,
+  "viirs_day": 12527, "viirs_night": 3811, "low_count": false }
+```
+
+- `source`: `terra_scaled` (Terra × factor, before Aqua), `modis`, `average` (MODIS and VIIRS
+  converted), `viirs_eq` (VIIRS converted, no MODIS).
+- `modis_eq`: VIIRS converted to MODIS units (`null` when VIIRS is not used that month).
+- `low_count`: the value is below the reliable monthly count (error > ~30 %).
+- A `harmonization` block gives the ratios (`r_day`, `r_night`, `r_total`), `terra_factor`,
+  `k_frp`, `fit_period`, `fit_detections`, `cutoffs` and `reliability`
+  (`area_deg2`, `small_area` when under 1 deg², `typical_month`, `low_count`, `low_count_months`).
 
 ---
 

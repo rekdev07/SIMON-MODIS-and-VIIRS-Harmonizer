@@ -2,7 +2,7 @@
 
 ## Key rules (summary; AGENTS.md is the source of truth)
 
-- Work only in `server/`. Never touch `client/` or `server/harmonizer/`. Never commit `data/`.
+- Work only in `server/` (including `harmonizer/`). Never touch `client/`. Never commit `data/`.
 - Stack is fixed: Python >= 3.12, pip, Flask factory, DuckDB read-only, Pydantic v2, flask-cors, pytest.
 - English everywhere; Google-style docstrings explaining what/how/why; full type hints.
 - SQL is always parameterized. One read-only connection per app, one cursor per request.

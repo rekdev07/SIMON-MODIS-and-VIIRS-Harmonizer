@@ -24,6 +24,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from app.network import PRIVATE_NETWORK_ORIGIN
+from harmonizer.config import HarmonizationConfig, load_config
 
 #: Absolute path of the ``server/`` directory. Relative paths in the
 #: configuration (such as the database path) are resolved against it, so the
@@ -54,6 +55,8 @@ class Settings:
             ``127.0.0.1`` = this computer only.
         port: Port used by ``run.py``.
         debug: Whether ``run.py`` starts Flask in debug mode.
+        harmonization: Fit periods and source cutoffs of the harmonized
+            calendar (``HARMONIZE_*`` variables, see :mod:`harmonizer.config`).
     """
 
     db_path: Path
@@ -64,6 +67,7 @@ class Settings:
     host: str = DEFAULT_HOST
     port: int = 5000
     debug: bool = False
+    harmonization: HarmonizationConfig = field(default_factory=HarmonizationConfig)
 
 
 def allowed_cors_origins(settings: Settings) -> list[str | re.Pattern[str]]:
@@ -184,4 +188,5 @@ def load_settings() -> Settings:
         host=os.getenv("API_HOST", DEFAULT_HOST),
         port=_parse_positive_int("API_PORT", os.getenv("API_PORT", "5000")),
         debug=_parse_bool(os.getenv("FLASK_DEBUG", "0")),
+        harmonization=load_config(),
     )

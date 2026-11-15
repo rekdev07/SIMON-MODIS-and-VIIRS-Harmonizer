@@ -546,6 +546,63 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Calendar, harmonized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Harmonized\", () => pm.expect(b.harmonized).to.eql(true));",
+                  "pm.test(\"Has harmonization block\", () => pm.expect(b.harmonization).to.include.keys(\"r_day\", \"r_night\", \"terra_factor\", \"fit_period\", \"cutoffs\", \"reliability\"));",
+                  "pm.test(\"Every month has a source\", () => b.months.forEach(m => pm.expect([\"terra_scaled\", \"modis\", \"average\", \"viirs_eq\"]).to.include(m.source)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Continuous monthly series in MODIS Terra+Aqua units (see docs/harmonization.md).",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calendar?lat1=14&lon1=-118&lat2=33&lon2=-86&harmonized=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "calendar"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "14"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-118"
+                },
+                {
+                  "key": "lat2",
+                  "value": "33"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-86"
+                },
+                {
+                  "key": "harmonized",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -971,6 +1028,64 @@
                 "nope"
               ],
               "query": []
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Harmonized with instrument",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Names the parameter\", () => pm.expect(pm.response.json().error.parameter).to.eql(\"instrument\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "harmonized=true cannot be combined with instrument (400).",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calendar?lat1=14&lon1=-118&lat2=33&lon2=-86&harmonized=true&instrument=MODIS",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "calendar"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "14"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-118"
+                },
+                {
+                  "key": "lat2",
+                  "value": "33"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-86"
+                },
+                {
+                  "key": "harmonized",
+                  "value": "true"
+                },
+                {
+                  "key": "instrument",
+                  "value": "MODIS"
+                }
+              ]
             }
           },
           "response": []

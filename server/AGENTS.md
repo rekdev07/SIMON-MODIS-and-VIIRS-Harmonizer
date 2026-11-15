@@ -10,8 +10,9 @@ backend. Read it before changing anything in `server/`.
   MODIS and VIIRS satellite instruments (NASA FIRMS data).
 - The user sends a **rectangle** (two corners) and a **date range**. The API returns the
   hotspots inside that rectangle and those dates.
-- The API only reads a local DuckDB database. It does **not** download FIRMS data,
-  does **not** harmonize sensors and has **no** authentication.
+- The API only reads a local DuckDB database. It does **not** download FIRMS data and has
+  **no** authentication. It **harmonizes counts** for the calendar (`harmonized=true`) with
+  parameters fitted offline by `scripts/harmonize.py fit` (see `docs/harmonization.md`).
 
 ### Monorepo
 
@@ -19,7 +20,7 @@ backend. Read it before changing anything in `server/`.
 SIMON-MODIS-and-VIIRS-Harmonizer/
 ├─ client/             React + Vite + Tailwind frontend (dev server http://localhost:5173). NOT part of this API. Do not modify.
 └─ server/             this backend (all work happens here)
-   └─ harmonizer/      placeholder for harmonization logic. NOT part of this API. Do not modify.
+   └─ harmonizer/      MODIS/VIIRS harmonization math (pure Python) + its DuckDB queries
 ```
 
 All paths below are relative to `server/`. Run every command (`pip`, `python`,
@@ -54,6 +55,7 @@ server/
 │  ├─ repository.py          table DDL + parameterized SQL queries
 │  ├─ serializers.py         rows -> GeoJSON / JSON
 │  ├─ calendar.py            monthly counts -> calendar grid (zeros, partial months, medians)
+│  ├─ harmonization.py       harmonized calendar: params (cached) + harmonizer series + grid
 │  ├─ errors.py              API exceptions + global Flask error handlers
 │  ├─ network.py             LAN helpers: private-network CORS pattern, LAN IP discovery
 │  └─ routes/
@@ -63,12 +65,20 @@ server/
 │     └─ meta.py             GET /api/v1/dataset, GET /health
 ├─ scripts/
 │  ├─ import_json.py         raw FIRMS JSON -> normalized DuckDB table
+│  ├─ import_bulk.py         same rules in DuckDB SQL, for GB-sized archives (--replace)
+│  ├─ harmonize.py           fit (table harmonization_params) / report (validation, 4 tests)
 │  └─ generate_mock_data.py  fake but realistic Mexico hotspots
-├─ docs/                     plain-language docs (running + LAN, postman + postman/ collection, api, dashboard-api, filtering, dates, data-import)
+├─ docs/                     plain-language docs (running + LAN, postman + postman/ collection, api, dashboard-api, filtering, dates, data-import, harmonization)
 ├─ tests/                    pytest suite with its own small known dataset
+├─ reports/                  generated validation reports (harmonize.py report)
 ├─ data/                     GITIGNORED: data/raw/*.json and *.duckdb files
 ├─ .env.example, requirements*.txt, pyproject.toml, run.py, README.md
-└─ harmonizer/               out of scope, do not modify
+└─ harmonizer/
+   ├─ method.py              ratios (ratio of sums), MODIS_eq, Terra factor, series, CV, metrics
+   ├─ data.py                DuckDB GROUP BY month (and 1° box) per satellite × day/night
+   ├─ params.py              fit / save / load table harmonization_params
+   ├─ validation.py          report: CV + reliability tests 1-4 + scatter SVG
+   └─ config.py              HARMONIZE_* settings (fit periods, cutoffs)
 ```
 
 Layering: `routes` → (`schemas`, `geo`) for validation → `repository` for SQL →
@@ -176,13 +186,18 @@ The `message` key appears **only** when there are no results.
 Burning activity calendar: hotspot counts per year-month for a rectangle (`lat1..lon2`, same
 optional filters as `/hotspots`, no dates). SQL `GROUP BY year(acq_date), month(acq_date)` with
 `count(*) FILTER` for the MODIS/VIIRS split. Response: `bbox`, `coverage` (min/max `acq_date` of the
-table, or of one instrument when filtered; null if empty), `harmonized` (false for now), `total`,
+table, or of one instrument when filtered; null if empty), `harmonized` (false unless `harmonized=true`), `total`,
 `months` (every month inside coverage, zeros filled, `partial` when coverage cuts it), `years`
 (totals, `partial`), `monthly_median` (12 values, median over full months only, null if none).
 `message` only when `total` is 0. Grid logic lives in `app/calendar.py` (pure functions).
 Not the same as `/api/v1/stats/calendar`: that one is chart 11 of the dashboard (year × **day**
 of year, limited to the request's dates, any metric); `/calendar` is the long-term **month**
 grid with medians used for the challenge's "current vs historical median" comparison.
+`harmonized=true` (400 with `instrument`/`daynight`/`confidence_min`): `count` = harmonized value in
+MODIS Terra+Aqua units (vegetation only), plus per month `source` (`terra_scaled`/`modis`/`average`/
+`viirs_eq`), `modis_eq`, `terra`, `aqua`, `viirs_day`, `viirs_night`, `low_count`, and a top-level
+`harmonization` block (ratios, fit period/detections, cutoffs, `reliability`). Method and decisions:
+`docs/harmonization.md`. Ratios are never hard-coded: always fitted from data.
 
 ### `GET /api/v1/stats/*` (dashboard)
 
@@ -225,7 +240,8 @@ Total records, min/max `acq_date`, count per instrument, bbox of all data (for f
 ## 9. Configuration (`.env.example`)
 
 `HOTSPOTS_DB_PATH`, `CORS_ORIGINS` (default `http://localhost:5173,http://localhost:3000`; `*` = any),
-`CORS_ALLOW_LAN` (1), `DEFAULT_LIMIT` (10000), `MAX_LIMIT` (50000), `API_HOST` (0.0.0.0), `API_PORT` (5000), `FLASK_DEBUG` (0).
+`CORS_ALLOW_LAN` (1), `DEFAULT_LIMIT` (10000), `MAX_LIMIT` (50000), `API_HOST` (0.0.0.0), `API_PORT` (5000), `FLASK_DEBUG` (0),
+`HARMONIZE_*` (fit periods and cutoffs of the harmonized calendar, see `harmonizer/config.py`).
 
 ### LAN access
 
@@ -272,9 +288,9 @@ python -m pydoc app.geo          # code docs
 
 ## 13. Out of scope
 
-Downloading from FIRMS; harmonization/calibration between sensors (`harmonizer/`);
-coverage regions or state/country validation; authentication; free-form polygons;
-any change to `client/` or `harmonizer/`.
+Downloading from FIRMS; coverage regions or state/country validation; authentication;
+free-form polygons (the harmonized calendar uses the rectangle); NOAA-20/21 in the harmonized
+series (would need their own ratio); any change to `client/`.
 Never commit `data/` (raw JSON, `.duckdb`).
 
 ## 14. Git workflow (agents)
