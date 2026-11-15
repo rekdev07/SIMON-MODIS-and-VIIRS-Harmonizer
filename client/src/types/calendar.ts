@@ -20,6 +20,9 @@ export type CalendarView = 'HARMONIZED' | 'MODIS' | 'VIIRS'
  */
 export type HarmonizedSource = 'terra_scaled' | 'modis' | 'average' | 'viirs_eq'
 
+/** Inclusive UTC date range `YYYY-MM-DD` → `YYYY-MM-DD` (e.g. the dates of the last search). */
+export type DateRange = { start: string; end: string }
+
 /** Hotspot count of one calendar month in the selected area. */
 export type CalendarMonth = {
   year: number

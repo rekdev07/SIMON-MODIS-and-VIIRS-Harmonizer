@@ -4,6 +4,7 @@ import {
   type CalendarData,
   type CalendarMonth,
   type CalendarView,
+  type DateRange,
   type HarmonizedSource,
 } from '../../types/calendar'
 import {
@@ -63,6 +64,8 @@ type BurnCalendarProps = {
   data: CalendarData
   /** Month currently shown on the map, highlighted in the grid. */
   selected: { year: number; month: number } | null
+  /** Dates of the last search; months touching it get a dashed outline. */
+  range: DateRange | null
   /** Called when the user clicks a month with data. */
   onSelectMonth: (year: number, month: number) => void
   /** Harmonized series, or raw counts of one sensor (never MODIS + VIIRS raw). */
@@ -95,6 +98,17 @@ function describeSource(m: CalendarMonth): string {
     default:
       return ''
   }
+}
+
+/**
+ * Whether a month overlaps an inclusive date range. Comparing `YYYY-MM`
+ * strings is enough: a month overlaps when it is between the range's first
+ * and last month (ISO strings sort like dates).
+ */
+function monthInRange(year: number, month: number, range: DateRange | null) {
+  if (!range) return false
+  const key = `${year}-${String(month).padStart(2, '0')}`
+  return key >= range.start.slice(0, 7) && key <= range.end.slice(0, 7)
 }
 
 /** Text describing one month, used for the hover line and `title`. */
@@ -139,10 +153,15 @@ function describe(m: CalendarMonth, median: number | null): string {
  * there is no artificial jump in 2002 (Aqua) or 2012 (VIIRS). A colored bar
  * under each month tells its source. "MODIS raw" / "VIIRS raw" show one
  * sensor's raw counts; they are never added together.
+ *
+ * The calendar always covers the whole loaded history (medians need every
+ * year); the months of the searched date range get a dashed outline so they
+ * stand out from the rest.
  */
 function BurnCalendar({
   data,
   selected,
+  range,
   onSelectMonth,
   view,
   onViewChange,
@@ -317,6 +336,14 @@ function BurnCalendar({
         </p>
       )}
 
+      {range && data.months.length > 0 && (
+        <p className="text-xs text-gray-600">
+          <span className="mr-1 inline-block h-3 w-4 rounded-sm align-middle outline-2 -outline-offset-2 outline-gray-900 outline-dashed" />
+          Months in the selected range ({range.start} → {range.end}). The rest
+          of the history stays visible for comparison.
+        </p>
+      )}
+
       {data.months.length > 0 && (
         <>
           <div className="overflow-x-auto">
@@ -354,7 +381,10 @@ function BurnCalendar({
                       }
                       const isSelected =
                         selected?.year === m.year && selected.month === m.month
-                      const text = describe(m, data.monthly_median[i])
+                      const inRange = monthInRange(m.year, m.month, range)
+                      const text =
+                        describe(m, data.monthly_median[i]) +
+                        (inRange ? ' · in the selected range' : '')
                       return (
                         <td key={label} className="h-7 p-0">
                           <button
@@ -368,6 +398,10 @@ function BurnCalendar({
                             aria-label={`${text}. Show on map.`}
                             className={`h-full w-full rounded tabular-nums transition hover:ring-2 hover:ring-gray-800 ${
                               isSelected ? 'ring-2 ring-blue-600' : ''
+                            } ${
+                              inRange
+                                ? 'outline-2 -outline-offset-2 outline-gray-900 outline-dashed'
+                                : ''
                             }`}
                             style={cellStyle(m)}
                           >
@@ -454,6 +488,12 @@ function BurnCalendar({
               />{' '}
               Partial month
             </span>
+            {range && (
+              <span className="flex items-center gap-1">
+                <span className="h-3 w-4 rounded-sm outline-2 -outline-offset-2 outline-gray-900 outline-dashed" />
+                Selected range
+              </span>
+            )}
           </div>
           {data.harmonized && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">

@@ -143,9 +143,11 @@ and this section.
   `harmonization` (ratios, fit period, cutoffs, `reliability.small_area` / `low_count`).
 - A month **missing** from `months` = no data loaded (draw hatched); `count: 0` = observed, no fires.
   `partial` months are left out of medians and anomalies.
-- Drawn by `components/Calendar/BurnCalendar.tsx` in a panel under the map (year × month heatmap,
-  YlOrRd counts / RdBu anomaly vs median, CSV export); clicking a month searches that month's
-  hotspots on the map. Series switch: **Harmonized** (default, `harmonized=true`; a colored bar
+- Drawn by `components/Calendar/BurnCalendar.tsx` in its own **Calendar** tab of the main view
+  toggle (Map | Calendar | Dashboard) (year × month heatmap, YlOrRd counts / RdBu anomaly vs
+  median, CSV export). It always shows the whole loaded history (medians need it); the months of
+  the last searched date range get a dashed outline. Clicking a month searches that month's
+  hotspots and switches to the Map tab. Series switch: **Harmonized** (default, `harmonized=true`; a colored bar
   under each month shows its source, and an amber warning appears when the area is under ~1° × 1°
   or its typical month is below the reliable count) | **MODIS raw** | **VIIRS raw** (`instrument`).
   Raw MODIS and VIIRS counts are never added together in the UI.

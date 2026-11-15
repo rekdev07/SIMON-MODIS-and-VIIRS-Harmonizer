@@ -13,7 +13,7 @@ import { useHotspots } from '../hooks/useHotspots'
 import { useDataset } from '../hooks/useDataset'
 import { useCalendar } from '../hooks/useCalendar'
 import BurnCalendar from '../components/Calendar/BurnCalendar'
-import { type CalendarView } from '../types/calendar'
+import { type CalendarView, type DateRange } from '../types/calendar'
 import { type Bounds, type LatLngPoint } from '../types/hotspots'
 import { DEFAULT_STATS_FILTERS, type StatsFilters } from '../types/stats'
 import { formatLatLng, parseLatLng, todayUtc } from '../utils/coordinates'
@@ -55,6 +55,8 @@ function MapViewer() {
   // where the server converts VIIRS to MODIS units so the 2000 → today record
   // is continuous. Raw MODIS or VIIRS can still be picked.
   const [calendarView, setCalendarView] = useState<CalendarView>('HARMONIZED')
+  // Dates of the last search (Save or a calendar click), outlined in the calendar.
+  const [searchedRange, setSearchedRange] = useState<DateRange | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<{
     year: number
     month: number
@@ -112,6 +114,7 @@ function MapViewer() {
     setDashboardArea({ bounds, startDate, endDate })
     calendar.load(bounds, calendarView)
     setCalendarBounds(bounds)
+    setSearchedRange({ start: startDate, end: endDate })
     setSelectedMonth(null)
   }
 
@@ -131,7 +134,8 @@ function MapViewer() {
   /**
    * Shows one calendar month on the map: sets the date pickers to that month
    * (first to last day, clamped to the loaded data so partial months stay
-   * valid) and searches the calendar's area.
+   * valid), searches the calendar's area and switches to the map tab so the
+   * hotspots are visible.
    */
   const selectMonth = (year: number, month: number) => {
     if (!calendarBounds) return
@@ -145,7 +149,9 @@ function MapViewer() {
     setStartDate(start)
     setEndDate(end)
     setSelectedMonth({ year, month })
+    setSearchedRange({ start, end })
     hotspots.search({ bounds: calendarBounds, startDate: start, endDate: end })
+    setView('map')
   }
 
   const showCalendarPanel =
@@ -266,24 +272,30 @@ function MapViewer() {
               hotspots={data?.features ?? []}
             />
           </div>
-          {showCalendarPanel && (
-            <div className="max-h-[50vh] shrink-0 overflow-y-auto border-t border-gray-300 bg-gray-50 p-4">
-              {calendar.loading && !calendar.data && (
-                <p className="text-sm text-gray-600">Loading calendar…</p>
-              )}
-              {calendar.error && (
-                <p className="text-sm text-red-600">{calendar.error}</p>
-              )}
-              {calendar.data && (
-                <BurnCalendar
-                  data={calendar.data}
-                  selected={selectedMonth}
-                  onSelectMonth={selectMonth}
-                  view={calendarView}
-                  onViewChange={changeCalendarView}
-                />
-              )}
-            </div>
+        </div>
+      ) : view === 'calendar' ? (
+        <div className="h-screen min-w-0 overflow-y-auto bg-gray-50 p-6">
+          {!showCalendarPanel && (
+            <p className="text-sm text-gray-600">
+              Draw or pick an area in the side panel and press Save to load its
+              burning activity calendar.
+            </p>
+          )}
+          {calendar.loading && !calendar.data && (
+            <p className="text-sm text-gray-600">Loading calendar…</p>
+          )}
+          {calendar.error && (
+            <p className="text-sm text-red-600">{calendar.error}</p>
+          )}
+          {calendar.data && (
+            <BurnCalendar
+              data={calendar.data}
+              selected={selectedMonth}
+              range={searchedRange}
+              onSelectMonth={selectMonth}
+              view={calendarView}
+              onViewChange={changeCalendarView}
+            />
           )}
         </div>
       ) : (
