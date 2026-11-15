@@ -24,6 +24,7 @@ from app.serializers import to_stats_body
 from app.stats_schemas import (
     DEFAULT_POINTS_LIMIT,
     CalendarOptions,
+    CellDaysOptions,
     CategoryOptions,
     DistributionOptions,
     GridOptions,
@@ -36,6 +37,7 @@ from app.stats_schemas import (
     parse_options,
     parse_stats_query,
 )
+from harmonizer import celldays
 
 bp = Blueprint("stats", __name__, url_prefix="/api/v1/stats")
 
@@ -222,3 +224,37 @@ def monthly() -> Response:
     """Detections per calendar month (1-12) and sensor, all years together (chart 25)."""
     query = _area()
     return _respond(repo.monthly(get_cursor(), query), query, {})
+
+
+@bp.get("/celldays")
+def cell_days() -> Response:
+    """Harmonized cell-days: VIIRS SNPP, or MODIS extrapolated where VIIRS has no data (charts 26-28).
+
+    The dashboard filters (confidence, type, sensor, satellite, day/night) are
+    **not** applied: the MODIS-to-VIIRS factors were calibrated on every
+    detection, so filtering would make them meaningless. ``metadata`` says so
+    with ``filters_applied: false``.
+    """
+    query = _area()
+    options = parse_options(CellDaysOptions, _args())
+    bbox = query.bbox
+    bounds = (bbox.min_lon, bbox.max_lon, bbox.min_lat, bbox.max_lat)
+    data, empty = celldays.build_cell_days(get_cursor(), bounds, query.start_date, query.end_date, options.freq)
+    pilot = celldays.is_pilot_area(*bounds)
+    west, east, south, north = celldays.PILOT_BOUNDS
+    units = {name: celldays.UNITS for name in ("value", "viirs", "extrapolated", "mean", "min", "max")}
+    return _respond(
+        data,
+        query,
+        units,
+        empty=empty,
+        freq=options.freq,
+        filters_applied=False,
+        cell_km=celldays.CELL_KM,
+        factors=celldays.FACTORS,
+        priority=list(celldays.PRIORITY),
+        pilot_bounds={"west": west, "east": east, "south": south, "north": north},
+        pilot_area=pilot,
+        warning=None if pilot else celldays.OUTSIDE_PILOT_WARNING,
+        disclaimer=celldays.DISCLAIMER,
+    )

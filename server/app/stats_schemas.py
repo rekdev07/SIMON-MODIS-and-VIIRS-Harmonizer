@@ -216,6 +216,12 @@ class GridOptions(_Options):
     cell: float = Field(default=0.25, gt=0, le=5, allow_inf_nan=False)
 
 
+class CellDaysOptions(_Options):
+    """``/stats/celldays``: ``freq`` of the ``series`` (weeks are 7-day blocks from ``start_date``)."""
+
+    freq: Literal["day", "week", "month", "year"] = "month"
+
+
 OptionsT = TypeVar("OptionsT", bound=BaseModel)
 
 
