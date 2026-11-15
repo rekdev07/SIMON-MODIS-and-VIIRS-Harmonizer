@@ -4,3 +4,5 @@ flask-cors~=6.0
 duckdb~=2.0
 pydantic~=2.14
 python-dotenv~=1.2
+pandas>=2.2,<4
+xgboost~=3.4.1

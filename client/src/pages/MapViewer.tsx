@@ -27,6 +27,7 @@ const API_MIN_DATE = '2000-11-01'
 // Loaded on first use: the dashboard pulls in the charting library (ECharts),
 // so the map view does not pay for it.
 const Dashboard = lazy(() => import('./Dashboard'))
+const MachineLearning = lazy(() => import('./MachineLearning'))
 
 const GEO_STATUS_TEXT = {
   locating: 'Looking for your location…',
@@ -325,6 +326,16 @@ function MapViewer() {
             />
           )}
         </div>
+      ) : view === 'ml' ? (
+        <Suspense
+          fallback={
+            <p className="flex h-screen items-center justify-center text-sm text-gray-500">
+              Loading machine-learning tools…
+            </p>
+          }
+        >
+          <MachineLearning />
+        </Suspense>
       ) : (
         <Suspense
           fallback={

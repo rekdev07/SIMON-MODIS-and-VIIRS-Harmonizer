@@ -53,10 +53,32 @@ export async function getJson<T>(
 ): Promise<T> {
   const query = new URLSearchParams(params).toString()
   const url = `${API_BASE_URL}${path}${query ? `?${query}` : ''}`
+  return requestJson<T>(url, { signal })
+}
 
+/**
+ * POSTs JSON to `path` and parses the response as `T`.
+ *
+ * API and network errors use the same {@link ApiRequestError} contract as
+ * {@link getJson}; abort errors are re-thrown untouched.
+ */
+export async function postJson<T>(
+  path: string,
+  body: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
+  return requestJson<T>(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+}
+
+async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
   let response: Response
   try {
-    response = await fetch(url, { signal })
+    response = await fetch(url, init)
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') throw err
     throw new ApiRequestError(

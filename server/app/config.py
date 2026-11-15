@@ -32,6 +32,8 @@ from harmonizer.config import HarmonizationConfig, load_config
 SERVER_DIR: Path = Path(__file__).resolve().parent.parent
 
 DEFAULT_DB_PATH = "data/hotspots.duckdb"
+DEFAULT_CONFIDENCE_MODEL_PATH = "model_artifacts/modelXGB.json"
+DEFAULT_CONFIDENCE_REPORT_PATH = "model_artifacts/reporte.json"
 DEFAULT_CORS_ORIGINS = "http://localhost:5173,http://localhost:3000"
 #: Listen on every network interface so other devices on the LAN can reach the API.
 #: Use ``API_HOST=127.0.0.1`` to accept connections from this computer only.
@@ -51,6 +53,8 @@ class Settings:
             frontend works when opened from another device on the LAN.
         default_limit: Rows returned by ``/api/v1/hotspots`` when no ``limit`` is sent.
         max_limit: Largest ``limit`` a client may request.
+        confidence_model_path: Native XGBoost model artifact path.
+        confidence_report_path: Evaluation report path for that model.
         host: Interface used by ``run.py``: ``0.0.0.0`` = all interfaces (LAN),
             ``127.0.0.1`` = this computer only.
         port: Port used by ``run.py``.
@@ -67,6 +71,8 @@ class Settings:
     host: str = DEFAULT_HOST
     port: int = 5000
     debug: bool = False
+    confidence_model_path: Path = SERVER_DIR / DEFAULT_CONFIDENCE_MODEL_PATH
+    confidence_report_path: Path = SERVER_DIR / DEFAULT_CONFIDENCE_REPORT_PATH
     harmonization: HarmonizationConfig = field(default_factory=HarmonizationConfig)
 
 
@@ -188,5 +194,11 @@ def load_settings() -> Settings:
         host=os.getenv("API_HOST", DEFAULT_HOST),
         port=_parse_positive_int("API_PORT", os.getenv("API_PORT", "5000")),
         debug=_parse_bool(os.getenv("FLASK_DEBUG", "0")),
+        confidence_model_path=resolve_path(
+            os.getenv("CONFIDENCE_MODEL_PATH", DEFAULT_CONFIDENCE_MODEL_PATH)
+        ),
+        confidence_report_path=resolve_path(
+            os.getenv("CONFIDENCE_REPORT_PATH", DEFAULT_CONFIDENCE_REPORT_PATH)
+        ),
         harmonization=load_config(),
     )

@@ -26,9 +26,14 @@ The API must be running for real data.
 
 ## Structure
 
-- `src/pages/`: `MapViewer` (side panel + Map / Calendar / Dashboard tabs) and `Dashboard`.
+- `src/pages/`: `MapViewer` (side panel + Map / Calendar / Dashboard / ML tabs),
+  `Dashboard`, and the Machine Learning view.
 - `src/components/`: `fields/` (side panel controls), `ScreenViewer/` (map), `Calendar/` (burning
-  activity calendar), `dashboard/` (charts).
+  activity calendar), `dashboard/` (charts), and `model/` (prediction form and evaluation visuals).
 - `src/api/`, `src/hooks/`, `src/types/`: typed API calls, data hooks and response types.
+
+The Machine Learning view sends feature values to the server-side model; the
+classifier artifacts and evaluation report are documented in
+[`../server/docs/model.md`](../server/docs/model.md).
 
 Conventions for contributors: [AGENTS.md](AGENTS.md).

@@ -2294,6 +2294,184 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Machine Learning",
+      "item": [
+        {
+          "name": "Model input schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const schema = pm.response.json();",
+                  "pm.test(\"Includes supported date and time values\", () => {",
+                  "  pm.expect(schema.categories.acq_date).to.include(\"2014-01-02\");",
+                  "  pm.expect(schema.categories.acq_time).to.include(\"0701\");",
+                  "});",
+                  "pm.test(\"Fixed model values are SNPP v2\", () => pm.expect(schema.fixed_values).to.eql({ version: \"2\", instrument: \"SNPP\", satellite: \"SNPP\" }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/model/schema",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "model",
+                "schema"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Model performance metrics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const report = pm.response.json();",
+                  "pm.test(\"Includes ordered classes and evaluation metrics\", () => {",
+                  "  pm.expect(report.classes).to.eql([\"l\", \"n\", \"h\"]);",
+                  "  pm.expect(report.reporte.accuracy).to.be.a(\"number\");",
+                  "  pm.expect(report.confusion_matriz).to.have.lengthOf(3);",
+                  "  pm.expect(report.importancias).to.have.property(\"brightness\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/model/metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "model",
+                "metrics"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Predict confidence from sample",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const result = pm.response.json();",
+                  "pm.test(\"Returns a normalized confidence class\", () => pm.expect([\"low\", \"nominal\", \"high\"]).to.include(result.predicted_class));",
+                  "pm.test(\"Probabilities sum to 1\", () => pm.expect(Math.abs(Object.values(result.probabilities).reduce((a, b) => a + b, 0) - 1)).to.be.below(0.000001));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 16.1985,\n  \"longitude\": -95.17513,\n  \"acq_date\": \"2014-01-02\",\n  \"acq_time\": \"0701\",\n  \"scan\": 0.77,\n  \"track\": 0.78,\n  \"daynight\": \"N\",\n  \"frp\": 2.77,\n  \"bright_t31\": 287.73,\n  \"type\": \"2\",\n  \"brightness\": 303.23\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/model/predict",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "model",
+                "predict"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Prediction rejects target confidence",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const error = pm.response.json().error;",
+                  "pm.test(\"Rejects confidence as an input\", () => {",
+                  "  pm.expect(error.code).to.eql(\"INVALID_PARAMETER\");",
+                  "  pm.expect(error.parameter).to.eql(\"confidence\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 16.1985,\n  \"longitude\": -95.17513,\n  \"acq_date\": \"2014-01-02\",\n  \"acq_time\": \"0701\",\n  \"scan\": 0.77,\n  \"track\": 0.78,\n  \"daynight\": \"N\",\n  \"frp\": 2.77,\n  \"bright_t31\": 287.73,\n  \"type\": \"2\",\n  \"brightness\": 303.23,\n  \"confidence\": \"n\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/model/predict",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "model",
+                "predict"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

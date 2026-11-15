@@ -1,5 +1,5 @@
 /** The main views of the app. */
-export type MainView = 'map' | 'calendar' | 'dashboard'
+export type MainView = 'map' | 'calendar' | 'dashboard' | 'ml'
 
 /** Props of {@link ViewToggle}. */
 type ViewToggleProps = {
@@ -8,10 +8,11 @@ type ViewToggleProps = {
 }
 
 /** Text-only labels: three icon + text buttons do not fit in the 300 px side panel. */
-const OPTIONS: { view: MainView; label: string }[] = [
-  { view: 'map', label: 'Map' },
-  { view: 'calendar', label: 'Calendar' },
-  { view: 'dashboard', label: 'Dashboard' },
+const OPTIONS: { view: MainView; label: string; ariaLabel: string }[] = [
+  { view: 'map', label: 'Map', ariaLabel: 'Map' },
+  { view: 'calendar', label: 'Calendar', ariaLabel: 'Calendar' },
+  { view: 'dashboard', label: 'Dashboard', ariaLabel: 'Dashboard' },
+  { view: 'ml', label: 'ML', ariaLabel: 'Machine Learning' },
 ]
 
 /**
@@ -25,9 +26,9 @@ function ViewToggle({ view, onChange }: ViewToggleProps) {
     <div
       role="radiogroup"
       aria-label="Main view"
-      className="mb-6 grid grid-cols-3 divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 bg-white"
+      className="mb-6 grid grid-cols-4 divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 bg-white"
     >
-      {OPTIONS.map(({ view: option, label }) => {
+      {OPTIONS.map(({ view: option, label, ariaLabel }) => {
         const active = view === option
         return (
           <button
@@ -35,6 +36,8 @@ function ViewToggle({ view, onChange }: ViewToggleProps) {
             type="button"
             role="radio"
             aria-checked={active}
+            aria-label={ariaLabel}
+            title={ariaLabel}
             onClick={() => onChange(option)}
             className={`truncate px-1 py-2 text-sm font-medium transition ${
               active

@@ -37,10 +37,10 @@ cp .env.example .env                 # optional: database path, CORS, port, HARM
 The data is **not** in the repository (it is large). You need FIRMS archive downloads in JSON
 format for your area, from <https://firms.modaps.eosdis.nasa.gov/download/>:
 
-| Dataset | Covers | Approx. size (Mexico) |
-|---|---|---|
-| MODIS Collection 6.1 (Terra + Aqua), archive + NRT | Nov 2000 → today | ~0.7 GB JSON |
-| VIIRS 375 m Suomi-NPP (Collection 2), archive + NRT | Jan 2012 → today | ~1.8 GB JSON |
+| Dataset                                             | Covers           | Approx. size (Mexico) |
+| --------------------------------------------------- | ---------------- | --------------------- |
+| MODIS Collection 6.1 (Terra + Aqua), archive + NRT  | Nov 2000 → today | ~0.7 GB JSON          |
+| VIIRS 375 m Suomi-NPP (Collection 2), archive + NRT | Jan 2012 → today | ~1.8 GB JSON          |
 
 Each FIRMS download is a zip with an `fire_archive_*.json` (standard processing) and, for the
 latest weeks, a `fire_nrt_*.json` (near-real-time). Unzip them anywhere outside the tracked
@@ -96,6 +96,8 @@ Using it: in the side panel pick a place, draw a rectangle on the map, choose th
   default; raw MODIS or VIIRS can be chosen). The months of your dates are outlined; click a month
   to see its hotspots on the map. A warning appears for small areas, where the error grows.
 - **Dashboard**: charts for the area and dates.
+- **Machine Learning**: VIIRS confidence prediction and classifier performance
+  metrics from the included XGBoost model and evaluation report.
 
 ## Checks
 
@@ -110,5 +112,7 @@ cd client && npm run lint && npm run format:check && npm run build
   filtering, dates, data import, Postman collection, running on the LAN.
 - [server/docs/harmonization.md](server/docs/harmonization.md): the harmonization method, its
   settings and its reliability.
+- [server/docs/model.md](server/docs/model.md): the confidence classifier, inference contract,
+  evaluation report, and artifact configuration.
 - [server/AGENTS.md](server/AGENTS.md) and [client/AGENTS.md](client/AGENTS.md): conventions for
   contributors.

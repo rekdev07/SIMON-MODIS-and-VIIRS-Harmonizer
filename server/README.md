@@ -53,6 +53,10 @@ python scripts/generate_mock_data.py --db data/mock_hotspots.duckdb
 # then run the API with HOTSPOTS_DB_PATH=data/mock_hotspots.duckdb
 ```
 
+The confidence classifier and its test report are served from
+`model_artifacts/modelXGB.json` and `model_artifacts/reporte.json` by default.
+See [docs/model.md](docs/model.md) for their input contract and path overrides.
+
 Stop the API while importing (DuckDB allows only one writer and no other open processes).
 
 ## Running the API

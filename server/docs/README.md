@@ -8,6 +8,7 @@ Plain-language docs for the backend in `server/`. No satellite background needed
 | [postman.md](postman.md) | How to try every endpoint in Postman, with a ready-to-import collection in [`postman/`](postman/) |
 | [api.md](api.md) | Every endpoint, its parameters, `curl` examples and example responses |
 | [dashboard-api.md](dashboard-api.md) | The `/api/v1/stats/*` endpoints that feed the dashboard charts (contract for the frontend) |
+| [model.md](model.md) | The confidence classifier artifacts, input contract, and model evaluation report |
 | [filtering.md](filtering.md) | How two corners become a rectangle, how each filter works, pagination |
 | [dates.md](dates.md) | Why everything is UTC, why both dates are inclusive, the "midnight" case |
 | [data-import.md](data-import.md) | How the raw FIRMS JSON is cleaned and loaded into DuckDB |

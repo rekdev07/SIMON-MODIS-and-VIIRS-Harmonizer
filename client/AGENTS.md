@@ -55,12 +55,13 @@ client/
 │  ├─ main.tsx               React root: StrictMode + global CSS + <App />
 │  ├─ App.tsx                top-level component / page switch
 │  ├─ index.css              Tailwind import and global styles
-│  ├─ pages/                 one component per screen (MapViewer.tsx, Dashboard.tsx)
+│  ├─ pages/                 screens (MapViewer.tsx, Dashboard.tsx, MachineLearning.tsx)
 │  └─ components/
 │     ├─ fields/             form controls of the side panel (Button, TextField, DatePicker)
 │     ├─ Calendar/           burning activity calendar (BurnCalendar, Segmented, LegendSwatch)
 │     ├─ ScreenViewer/       components of the map viewer (Map.tsx, SideBar.tsx, ViewToggle.tsx)
-│     └─ dashboard/          the 25 dashboard charts, ChartCard, EChart wrapper, filters
+│     ├─ dashboard/          the 25 dashboard charts, ChartCard, EChart wrapper, filters
+│     └─ model/              confidence input form and evaluation-report visuals
 ├─ eslint.config.js, .prettierrc.json, .prettierignore
 ├─ vite.config.ts, tsconfig*.json
 └─ package.json, package-lock.json, README.md
@@ -150,7 +151,7 @@ and this section.
 - A month **missing** from `months` = no data loaded (draw hatched); `count: 0` = observed, no fires.
   `partial` months are left out of medians and anomalies.
 - Drawn by `components/Calendar/BurnCalendar.tsx` in its own **Calendar** tab of the main view
-  toggle (Map | Calendar | Dashboard) (year × month heatmap, YlOrRd counts / RdBu anomaly vs
+  toggle (Map | Calendar | Dashboard | ML) (year × month heatmap, YlOrRd counts / RdBu anomaly vs
   median, CSV and PNG export). It always shows the whole loaded history (medians need it); the months of
   the last searched date range get a dashed outline. Clicking a month searches that month's
   hotspots and switches to the Map tab. Series switch: **Harmonized** (default, `harmonized=true`; a colored bar
@@ -171,6 +172,21 @@ The dashboard is lazy-loaded so ECharts is not in the map's bundle.
 Every `ChartCard` with a chart has a **PNG** button that saves the whole card (title, subtitle,
 chart); ECharts renders at ≥ 2× so the image is sharp.
 
+### Confidence model (Machine Learning view)
+
+The **ML** main view has **Prediction** and **Performance** tabs. Prediction sends the 11
+variable features to `POST /api/v1/model/predict`; the API adds the fixed `version=2`,
+`instrument=SNPP`, and `satellite=SNPP`. Never send the target `confidence` as a feature.
+The API maps model classes `l`/`n`/`h` to UI labels `low`/`nominal`/`high`.
+
+The form calls `GET /api/v1/model/schema` to constrain acquisition-date and acquisition-time
+choices to the model's saved categorical vocabularies. The Performance tab calls
+`GET /api/v1/model/metrics` for the stored report and displays class metrics, the confusion
+matrix, and feature importances. Types, requests, and hooks live
+in `src/types/model.ts`, `src/api/model.ts`, and `src/hooks/useModel*`; UI components never
+load the XGBoost artifact or call `fetch` directly. Full model input and artifact details:
+`server/docs/model.md`.
+
 ### Downloads (challenge requirement: download analytics and visualizations)
 
 - Hotspots on the map → **CSV** button next to "N hotspots found" (`utils/hotspotsCsv.ts`;
@@ -186,11 +202,14 @@ chart); ECharts renders at ≥ 2× so the image is sharp.
 - `GET /api/v1/dataset`: total records, min/max `acq_date`, count per instrument, bbox of all
   data. Use it to bound the date pickers and the initial map view.
 - `GET /health`: `200 {"status":"ok","database":"connected"}` or `503 {"status":"error","database":"unavailable"}`.
+- `GET /api/v1/model/schema`, `GET /api/v1/model/metrics`, and `POST /api/v1/model/predict`:
+  classifier input options, evaluation report, and single-hotspot prediction.
 
 ### Errors
 
 `{"error": {"code": "...", "message": "...", "parameter"?: "..."}}`. Codes: 400
-`INVALID_PARAMETER`, 404 `NOT_FOUND`, 405 `METHOD_NOT_ALLOWED`, 503 `DATABASE_UNAVAILABLE`,
+`INVALID_PARAMETER`, 404 `NOT_FOUND`, 405 `METHOD_NOT_ALLOWED`, 503 `DATABASE_UNAVAILABLE` /
+`MODEL_UNAVAILABLE`,
 500 `INTERNAL_ERROR`. Show `message` to the user (highlight the field named by `parameter`)
 and handle network failures (API down) separately with a clear message.
 

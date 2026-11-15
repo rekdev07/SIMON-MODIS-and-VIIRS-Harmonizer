@@ -7,6 +7,8 @@ messages are in English. There is no authentication.
 
 The pre-computed dashboard statistics (`/api/v1/stats/*`) have their own
 reference: [dashboard-api.md](dashboard-api.md).
+The confidence model and its evaluation report are documented in
+[model.md](model.md).
 
 ---
 
@@ -250,6 +252,70 @@ curl -i http://localhost:5000/health
 
 ---
 
+## Confidence model
+
+The model API supports the **Machine Learning** view in the client. The
+classifier predicts VIIRS confidence (`low`, `nominal`, or `high`) from one
+detection's feature values; `confidence` must not be sent as an input.
+
+### `GET /api/v1/model/metrics`
+
+Returns the stored evaluation report: per-class scores, accuracy and aggregate
+scores, confusion matrix, test-set size, feature importances, and `model_version`.
+The report's class order is `l`, `n`, `h`; the UI maps these to `low`, `nominal`,
+`high`. Confusion-matrix rows are actual classes and columns are predicted
+classes.
+
+### `GET /api/v1/model/schema`
+
+Returns the categorical vocabularies embedded in the model and its fixed
+feature values. The client uses the supported acquisition dates/times to
+constrain the form; categorical values not present in the trained artifact are
+rejected rather than silently treated as missing.
+
+### `POST /api/v1/model/predict`
+
+Required JSON body:
+
+```json
+{
+  "latitude": 16.1985,
+  "longitude": -95.17513,
+  "acq_date": "2014-01-02",
+  "acq_time": "0701",
+  "scan": 0.77,
+  "track": 0.78,
+  "daynight": "N",
+  "frp": 2.77,
+  "bright_t31": 287.73,
+  "type": "2",
+  "brightness": 303.23
+}
+```
+
+Coordinates must be within latitude −90…90 and longitude −180…180. `scan` and
+`track` must be positive; `frp` may be `null` or non-negative. `acq_date` is
+`YYYY-MM-DD`; `acq_time` is four-digit UTC `HHmm`; `daynight` is `D` or `N`;
+`type` is the string `"0"` through `"3"`. The endpoint adds the model's fixed
+`version="2"`, `instrument="SNPP"`, and `satellite="SNPP"` values. Unknown
+fields, including `confidence`, are rejected. The date and time must also
+belong to the vocabularies returned by `/api/v1/model/schema`.
+
+```json
+{
+  "predicted_class": "nominal",
+  "raw_class": "n",
+  "probabilities": {"low": 0.08, "nominal": 0.90, "high": 0.02},
+  "model_version": "xgbrf-confidence-v1"
+}
+```
+
+The probabilities are model output scores and are not guaranteed to be
+calibrated. If the artifact is missing or incompatible, the endpoint responds
+with HTTP 503 and `MODEL_UNAVAILABLE`.
+
+---
+
 ## Errors
 
 All errors share one shape:
@@ -264,6 +330,7 @@ All errors share one shape:
 | 404 | `NOT_FOUND` | Unknown URL |
 | 405 | `METHOD_NOT_ALLOWED` | e.g. `POST` to a `GET` endpoint |
 | 503 | `DATABASE_UNAVAILABLE` | The database file cannot be opened |
+| 503 | `MODEL_UNAVAILABLE` | The confidence model/report is missing or incompatible |
 | 500 | `INTERNAL_ERROR` | Unexpected bug (details are only in the server log) |
 
 Examples of 400 messages:

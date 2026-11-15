@@ -57,12 +57,15 @@ server/
 │  ├─ calendar.py            monthly counts -> calendar grid (zeros, partial months, medians)
 │  ├─ harmonization.py       harmonized calendar: params (cached) + harmonizer series + grid
 │  ├─ errors.py              API exceptions + global Flask error handlers
+│  ├─ model.py               confidence model artifact loading and inference
 │  ├─ network.py             LAN helpers: private-network CORS pattern, LAN IP discovery
 │  └─ routes/
 │     ├─ hotspots.py         GET /api/v1/hotspots
 │     ├─ calendar.py         GET /api/v1/calendar
 │     ├─ stats.py            GET /api/v1/stats/* (13 dashboard endpoints)
-│     └─ meta.py             GET /api/v1/dataset, GET /health
+│     ├─ meta.py             GET /api/v1/dataset, GET /health
+│     └─ model.py            GET /api/v1/model/schema|metrics, POST /api/v1/model/predict
+├─ model_artifacts/           native XGBoost confidence model + evaluation report
 ├─ scripts/
 │  ├─ import_json.py         raw FIRMS JSON -> normalized DuckDB table
 │  ├─ import_bulk.py         same rules in DuckDB SQL, for GB-sized archives (--replace)
@@ -225,7 +228,8 @@ Total records, min/max `acq_date`, count per instrument, bbox of all data (for f
 
 ### Errors
 `{"error": {"code": "...", "message": "..."}}` (plus `"parameter"` for invalid parameters).
-400 `INVALID_PARAMETER`; 404 `NOT_FOUND`; 405 `METHOD_NOT_ALLOWED`; 503 `DATABASE_UNAVAILABLE`;
+400 `INVALID_PARAMETER`; 404 `NOT_FOUND`; 405 `METHOD_NOT_ALLOWED`; 503 `DATABASE_UNAVAILABLE` /
+`MODEL_UNAVAILABLE`;
 500 `INTERNAL_ERROR` (never expose stack traces). All messages in English.
 
 ## 8. Database connection
@@ -239,7 +243,8 @@ Total records, min/max `acq_date`, count per instrument, bbox of all data (for f
 
 ## 9. Configuration (`.env.example`)
 
-`HOTSPOTS_DB_PATH`, `CORS_ORIGINS` (default `http://localhost:5173,http://localhost:3000`; `*` = any),
+`HOTSPOTS_DB_PATH`, `CONFIDENCE_MODEL_PATH`, `CONFIDENCE_MODEL_REPORT_PATH`,
+`CORS_ORIGINS` (default `http://localhost:5173,http://localhost:3000`; `*` = any),
 `CORS_ALLOW_LAN` (1), `DEFAULT_LIMIT` (10000), `MAX_LIMIT` (50000), `API_HOST` (0.0.0.0), `API_PORT` (5000), `FLASK_DEBUG` (0),
 `HARMONIZE_*` (fit periods and cutoffs of the harmonized calendar, see `harmonizer/config.py`).
 
@@ -272,7 +277,8 @@ python -m pydoc app.geo          # code docs
   in a temp directory.
 - Required coverage: reversed corners, inclusive edges, empty result + exact message, no message
   with results, 400 cases (coords, degenerate rectangle, dates), limit/truncated,
-  vegetation_only, confidence_min, daynight, instrument, GeoJSON `[lon, lat]`, `/health`
+  vegetation_only, confidence_min, daynight, instrument, GeoJSON `[lon, lat]`, `/health`,
+  confidence model metrics/prediction validation and model-unavailable errors
   with and without DB, import normalization (padding, confidence, satellites, type→NULL,
   rejections, duplicates), the normalized stats projection and every `/api/v1/stats/*` endpoint
   (values, empty rectangle, 400s) with the `STATS_ROWS` database in `tests/conftest.py`.

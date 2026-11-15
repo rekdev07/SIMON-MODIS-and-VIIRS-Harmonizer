@@ -48,6 +48,11 @@ an empty-area case and three 400 cases. Its checks only look at the shape of the
 (fields, `message`, error `parameter`), so they pass with any data that has detections in
 Durango in 2013. What each endpoint returns: [dashboard-api.md](dashboard-api.md).
 
+The **Machine Learning** folder checks the model's supported input categories, the saved
+evaluation report, and a prediction using the example record. It requires the default model
+artifacts in `server/model_artifacts/`; the prediction check confirms all three normalized
+probabilities sum to 1.
+
 ## Doing it by hand (to understand what is happening)
 
 ### 1. Your first request: health

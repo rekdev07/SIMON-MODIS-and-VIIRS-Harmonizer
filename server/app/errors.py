@@ -96,6 +96,21 @@ class DatabaseUnavailableError(ApiError):
         super().__init__(message)
 
 
+class ModelUnavailableError(ApiError):
+    """The confidence model or its evaluation report is missing or unusable (HTTP 503)."""
+
+    status_code = 503
+    code = "MODEL_UNAVAILABLE"
+
+    def __init__(self, message: str = "The confidence model is not available") -> None:
+        """Create the error.
+
+        Args:
+            message: Safe explanation shown to the API client.
+        """
+        super().__init__(message)
+
+
 #: Codes used for standard HTTP errors raised by Flask/Werkzeug (404, 405, ...).
 _HTTP_CODES: dict[int, str] = {
     400: "BAD_REQUEST",
