@@ -1,0 +1,609 @@
+{
+  "period": {
+    "start_date": "2013-01-01",
+    "end_date": "2013-12-31"
+  },
+  "ratios": {
+    "day": 3.692,
+    "night": 8.058,
+    "total": 4.246,
+    "k_frp": 0.954,
+    "modis": 76878,
+    "viirs": 326448,
+    "night_share_modis": 0.127,
+    "months": 12
+  },
+  "terra_factor": {
+    "value": 2.223,
+    "terra": 280352,
+    "aqua": 342869,
+    "period": [
+      "2003-01-01",
+      "2011-12-31"
+    ]
+  },
+  "seasonal": {
+    "dry_months": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "dry": {
+      "day": 3.555,
+      "night": 7.946,
+      "total": 4.107,
+      "k_frp": 0.979,
+      "modis": 66332,
+      "viirs": 272438,
+      "night_share_modis": 0.126,
+      "months": 5
+    },
+    "rest": {
+      "day": 4.561,
+      "night": 8.711,
+      "total": 5.121,
+      "k_frp": 0.817,
+      "modis": 10546,
+      "viirs": 54010,
+      "night_share_modis": 0.135,
+      "months": 7
+    },
+    "cv_boxes_one_set": {
+      "n": 2204,
+      "mape": 0.666,
+      "wape": 0.252,
+      "r2": 0.938,
+      "bias": -0.006
+    },
+    "cv_boxes_per_season": {
+      "n": 2204,
+      "mape": 0.638,
+      "wape": 0.25,
+      "r2": 0.944,
+      "bias": 0.021
+    },
+    "wape_improvement": 0.002,
+    "decision": "simple"
+  },
+  "cross_validation": {
+    "national_day_night": {
+      "n": 12,
+      "mape": 0.124,
+      "wape": 0.082,
+      "r2": 0.988,
+      "bias": -0.006
+    },
+    "national_single_ratio": {
+      "n": 12,
+      "mape": 0.126,
+      "wape": 0.096,
+      "r2": 0.987,
+      "bias": -0.001
+    },
+    "boxes_day_night": {
+      "n": 2204,
+      "mape": 0.666,
+      "wape": 0.252,
+      "r2": 0.938,
+      "bias": -0.006
+    },
+    "boxes_single_ratio": {
+      "n": 2204,
+      "mape": 0.672,
+      "wape": 0.283,
+      "r2": 0.918,
+      "bias": -0.001
+    },
+    "box_size_deg": 1.0
+  },
+  "test1_stability": {
+    "reference_year": 2013,
+    "reference": {
+      "day": 3.692,
+      "night": 8.058,
+      "total": 4.246,
+      "k_frp": 0.954,
+      "modis": 76878,
+      "viirs": 326448,
+      "night_share_modis": 0.127,
+      "months": 12
+    },
+    "per_year": [
+      {
+        "year": 2013,
+        "day": 3.692,
+        "night": 8.058,
+        "total": 4.246,
+        "k_frp": 0.954,
+        "modis": 76878,
+        "viirs": 326448,
+        "night_share_modis": 0.127,
+        "months": 12,
+        "diff_day": 0.0,
+        "diff_night": 0.0,
+        "diff_total": 0.0
+      }
+    ],
+    "max_abs_diff": {
+      "day": 0,
+      "night": 0,
+      "total": 0
+    },
+    "trend_correlation_with_year": {
+      "day": null,
+      "night": null,
+      "total": null
+    },
+    "within_tolerance": true,
+    "cross_year": [],
+    "cv_variants": {
+      "fixed_reference_year": {
+        "boxes": {
+          "n": 0,
+          "mape": null,
+          "wape": null,
+          "r2": null,
+          "bias": null
+        },
+        "national": {
+          "n": 0,
+          "mape": null,
+          "wape": null,
+          "r2": null,
+          "bias": null
+        },
+        "note": "ratios of 2013 applied to every other year"
+      },
+      "pooled_all_years": {
+        "boxes": {
+          "n": 2204,
+          "mape": 0.666,
+          "wape": 0.252,
+          "r2": 0.938,
+          "bias": -0.006
+        },
+        "national": {
+          "n": 12,
+          "mape": 0.124,
+          "wape": 0.082,
+          "r2": 0.988,
+          "bias": -0.006
+        },
+        "note": "one set fitted on all overlap years, leave-one-month-out"
+      },
+      "per_year": {
+        "boxes": {
+          "n": 2204,
+          "mape": 0.666,
+          "wape": 0.252,
+          "r2": 0.938,
+          "bias": -0.006
+        },
+        "national": {
+          "n": 12,
+          "mape": 0.124,
+          "wape": 0.082,
+          "r2": 0.988,
+          "bias": -0.006
+        },
+        "note": "one set per year, leave-one-month-out within the year"
+      }
+    },
+    "wape_improvement_per_year_vs_pooled": 0.0,
+    "decision": "simple"
+  },
+  "test2_regions": {
+    "national": {
+      "day": 3.692,
+      "night": 8.058,
+      "total": 4.246,
+      "k_frp": 0.954,
+      "modis": 76878,
+      "viirs": 326448,
+      "night_share_modis": 0.127,
+      "months": 12
+    },
+    "regions": [
+      {
+        "region": "north",
+        "day": 4.094,
+        "night": 10.063,
+        "total": 5.223,
+        "k_frp": 0.883,
+        "modis": 9939,
+        "viirs": 51915,
+        "night_share_modis": 0.189,
+        "months": 12,
+        "diff_day": 0.109,
+        "diff_night": 0.249,
+        "diff_total": 0.23
+      },
+      {
+        "region": "center",
+        "day": 3.748,
+        "night": 8.166,
+        "total": 4.194,
+        "k_frp": 0.938,
+        "modis": 28549,
+        "viirs": 119744,
+        "night_share_modis": 0.101,
+        "months": 12,
+        "diff_day": 0.015,
+        "diff_night": 0.013,
+        "diff_total": -0.012
+      },
+      {
+        "region": "south",
+        "day": 3.628,
+        "night": 7.571,
+        "total": 4.194,
+        "k_frp": 0.955,
+        "modis": 28829,
+        "viirs": 120919,
+        "night_share_modis": 0.144,
+        "months": 12,
+        "diff_day": -0.017,
+        "diff_night": -0.06,
+        "diff_total": -0.012
+      },
+      {
+        "region": "southeast",
+        "day": 3.334,
+        "night": 5.652,
+        "total": 3.543,
+        "k_frp": 1.097,
+        "modis": 9561,
+        "viirs": 33870,
+        "night_share_modis": 0.09,
+        "months": 12,
+        "diff_day": -0.097,
+        "diff_night": -0.299,
+        "diff_total": -0.166
+      }
+    ],
+    "max_abs_diff": 0.299,
+    "within_tolerance": false,
+    "cv_boxes_national_ratios": {
+      "n": 2204,
+      "mape": 0.666,
+      "wape": 0.252,
+      "r2": 0.938,
+      "bias": -0.006
+    },
+    "cv_boxes_regional_ratios": {
+      "n": 2204,
+      "mape": 0.66,
+      "wape": 0.247,
+      "r2": 0.941,
+      "bias": -0.008
+    },
+    "wape_improvement_regional_vs_national": 0.005,
+    "decision": "simple",
+    "region_rule": "north lat>=24; center 19-24; southeast lat<19 & lon>=-92; south the rest (1\u00b0 box SW corner)"
+  },
+  "test3_proportionality": {
+    "n_box_months": 2204,
+    "linear_fit": {
+      "slope": 3.776,
+      "intercept": 16.418,
+      "intercept_vs_mean_viirs": 0.111,
+      "slope_through_origin": 3.812
+    },
+    "bins": [
+      {
+        "from": 0,
+        "to": 1,
+        "n": 704,
+        "ratio": 12.395,
+        "wape": 3.105,
+        "mape": 0.656,
+        "bias": 1.792
+      },
+      {
+        "from": 1,
+        "to": 3,
+        "n": 429,
+        "ratio": 4.671,
+        "wape": 0.949,
+        "mape": 0.78,
+        "bias": 0.109
+      },
+      {
+        "from": 3,
+        "to": 5,
+        "n": 189,
+        "ratio": 4.161,
+        "wape": 0.651,
+        "mape": 0.977,
+        "bias": 0.014
+      },
+      {
+        "from": 5,
+        "to": 10,
+        "n": 236,
+        "ratio": 4.368,
+        "wape": 0.534,
+        "mape": 0.829,
+        "bias": 0.068
+      },
+      {
+        "from": 10,
+        "to": 20,
+        "n": 180,
+        "ratio": 4.661,
+        "wape": 0.466,
+        "mape": 0.755,
+        "bias": 0.121
+      },
+      {
+        "from": 20,
+        "to": 50,
+        "n": 187,
+        "ratio": 4.614,
+        "wape": 0.327,
+        "mape": 0.385,
+        "bias": 0.092
+      },
+      {
+        "from": 50,
+        "to": 100,
+        "n": 115,
+        "ratio": 4.809,
+        "wape": 0.305,
+        "mape": 0.383,
+        "bias": 0.15
+      },
+      {
+        "from": 100,
+        "to": 300,
+        "n": 97,
+        "ratio": 4.856,
+        "wape": 0.256,
+        "mape": 0.303,
+        "bias": 0.132
+      },
+      {
+        "from": 300,
+        "to": null,
+        "n": 67,
+        "ratio": 3.772,
+        "wape": 0.176,
+        "mape": 0.172,
+        "bias": -0.125
+      }
+    ],
+    "reliable_wape_target": 0.3,
+    "min_reliable_count": 100,
+    "unbiased_tolerance": 0.1,
+    "min_unbiased_count": null
+  },
+  "test4_gaps": {
+    "outages": {
+      "Terra": {
+        "missing_days": 93,
+        "longest": [
+          {
+            "from": "2001-06-15",
+            "to": "2001-07-03",
+            "days": 19
+          },
+          {
+            "from": "2022-10-11",
+            "to": "2022-10-23",
+            "days": 13
+          },
+          {
+            "from": "2002-03-20",
+            "to": "2002-03-28",
+            "days": 9
+          },
+          {
+            "from": "2016-02-19",
+            "to": "2016-02-27",
+            "days": 9
+          },
+          {
+            "from": "2003-12-17",
+            "to": "2003-12-24",
+            "days": 8
+          }
+        ]
+      },
+      "Aqua": {
+        "missing_days": 44,
+        "longest": [
+          {
+            "from": "2022-04-01",
+            "to": "2022-04-16",
+            "days": 16
+          },
+          {
+            "from": "2002-07-30",
+            "to": "2002-08-07",
+            "days": 9
+          },
+          {
+            "from": "2002-09-12",
+            "to": "2002-09-13",
+            "days": 2
+          },
+          {
+            "from": "2013-09-16",
+            "to": "2013-09-17",
+            "days": 2
+          },
+          {
+            "from": "2002-11-15",
+            "to": "2002-11-15",
+            "days": 1
+          }
+        ]
+      },
+      "SNPP": {
+        "missing_days": 53,
+        "longest": [
+          {
+            "from": "2022-07-27",
+            "to": "2022-08-10",
+            "days": 15
+          },
+          {
+            "from": "2024-07-10",
+            "to": "2024-07-15",
+            "days": 6
+          },
+          {
+            "from": "2026-07-11",
+            "to": "2026-07-16",
+            "days": 6
+          },
+          {
+            "from": "2024-05-30",
+            "to": "2024-06-03",
+            "days": 5
+          },
+          {
+            "from": "2024-07-24",
+            "to": "2024-07-28",
+            "days": 5
+          }
+        ]
+      }
+    },
+    "fire_season_months": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "normal_fire_median_threshold": 10,
+    "eligible_box_months": 4400,
+    "zero_box_months": 21,
+    "zero_share": 0.0048,
+    "examples": [
+      {
+        "month": "2004-04",
+        "box_lat": 27,
+        "box_lon": -109,
+        "normal_median": 25
+      },
+      {
+        "month": "2004-04",
+        "box_lat": 24,
+        "box_lon": -99,
+        "normal_median": 11
+      },
+      {
+        "month": "2004-04",
+        "box_lat": 26,
+        "box_lon": -109,
+        "normal_median": 12
+      },
+      {
+        "month": "2004-05",
+        "box_lat": 18,
+        "box_lon": -88,
+        "normal_median": 11
+      },
+      {
+        "month": "2005-04",
+        "box_lat": 27,
+        "box_lon": -109,
+        "normal_median": 25
+      },
+      {
+        "month": "2005-04",
+        "box_lat": 26,
+        "box_lon": -109,
+        "normal_median": 12
+      },
+      {
+        "month": "2005-04",
+        "box_lat": 28,
+        "box_lon": -109,
+        "normal_median": 15
+      },
+      {
+        "month": "2005-05",
+        "box_lat": 28,
+        "box_lon": -109,
+        "normal_median": 60
+      },
+      {
+        "month": "2006-05",
+        "box_lat": 19,
+        "box_lon": -100,
+        "normal_median": 10
+      },
+      {
+        "month": "2007-01",
+        "box_lat": 23,
+        "box_lon": -99,
+        "normal_median": 12
+      },
+      {
+        "month": "2007-01",
+        "box_lat": 25,
+        "box_lon": -99,
+        "normal_median": 10
+      },
+      {
+        "month": "2008-03",
+        "box_lat": 21,
+        "box_lon": -90,
+        "normal_median": 30
+      },
+      {
+        "month": "2010-02",
+        "box_lat": 23,
+        "box_lon": -105,
+        "normal_median": 10
+      },
+      {
+        "month": "2010-02",
+        "box_lat": 18,
+        "box_lon": -92,
+        "normal_median": 18
+      },
+      {
+        "month": "2010-03",
+        "box_lat": 23,
+        "box_lon": -106,
+        "normal_median": 18
+      },
+      {
+        "month": "2010-03",
+        "box_lat": 21,
+        "box_lon": -104,
+        "normal_median": 12
+      },
+      {
+        "month": "2010-04",
+        "box_lat": 21,
+        "box_lon": -102,
+        "normal_median": 14
+      },
+      {
+        "month": "2010-05",
+        "box_lat": 29,
+        "box_lon": -109,
+        "normal_median": 19
+      },
+      {
+        "month": "2011-03",
+        "box_lat": 23,
+        "box_lon": -103,
+        "normal_median": 18
+      },
+      {
+        "month": "2012-01",
+        "box_lat": 23,
+        "box_lon": -103,
+        "normal_median": 13
+      }
+    ]
+  }
+}
