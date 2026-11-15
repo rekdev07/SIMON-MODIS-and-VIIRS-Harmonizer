@@ -1,6 +1,5 @@
-import { type CalendarData } from '../types/calendar'
+import { type CalendarData, type CalendarView } from '../types/calendar'
 import { type Bounds } from '../types/hotspots'
-import { type Sensor } from '../types/stats'
 import { getJson } from './client'
 
 /**
@@ -10,23 +9,25 @@ import { getJson } from './client'
  * history of the area can be compared. Counting happens in the database, so
  * the response stays small and is never truncated.
  *
- * `instrument` limits the counts to one sensor. The UI always sends it: MODIS
- * and VIIRS counts must not be added together until they are harmonized.
+ * `view` picks what is counted: `MODIS` or `VIIRS` send `instrument` (raw
+ * counts of one sensor, never added together because their pixels differ);
+ * `HARMONIZED` sends `harmonized=true` and gets one continuous series in
+ * MODIS Terra+Aqua units, where VIIRS was converted with fitted ratios.
  */
 export function fetchCalendar(
   bounds: Bounds,
-  instrument: Sensor,
+  view: CalendarView,
   signal?: AbortSignal,
 ): Promise<CalendarData> {
-  return getJson<CalendarData>(
-    '/api/v1/calendar',
-    {
-      lat1: String(bounds.southWest.lat),
-      lon1: String(bounds.southWest.lng),
-      lat2: String(bounds.northEast.lat),
-      lon2: String(bounds.northEast.lng),
-      instrument,
-    },
-    signal,
-  )
+  const area = {
+    lat1: String(bounds.southWest.lat),
+    lon1: String(bounds.southWest.lng),
+    lat2: String(bounds.northEast.lat),
+    lon2: String(bounds.northEast.lng),
+  }
+  const params =
+    view === 'HARMONIZED'
+      ? { ...area, harmonized: 'true' }
+      : { ...area, instrument: view }
+  return getJson<CalendarData>('/api/v1/calendar', params, signal)
 }

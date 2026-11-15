@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchCalendar } from '../api/calendar'
 import { ApiRequestError } from '../api/client'
-import { type CalendarData } from '../types/calendar'
+import { type CalendarData, type CalendarView } from '../types/calendar'
 import { type Bounds } from '../types/hotspots'
-import { type Sensor } from '../types/stats'
 
 /** Value returned by {@link useCalendar}. */
 export type UseCalendarResult = {
@@ -11,8 +10,8 @@ export type UseCalendarResult = {
   loading: boolean
   /** User-facing error message, or null. */
   error: string | null
-  /** Loads the calendar of `bounds` for one sensor, aborting any request still in flight. */
-  load: (bounds: Bounds, sensor: Sensor) => void
+  /** Loads the calendar of `bounds` for one view, aborting any request still in flight. */
+  load: (bounds: Bounds, view: CalendarView) => void
 }
 
 /**
@@ -27,14 +26,14 @@ export function useCalendar(): UseCalendarResult {
 
   useEffect(() => () => controllerRef.current?.abort(), [])
 
-  const load = useCallback((bounds: Bounds, sensor: Sensor) => {
+  const load = useCallback((bounds: Bounds, view: CalendarView) => {
     controllerRef.current?.abort()
     const controller = new AbortController()
     controllerRef.current = controller
 
     setLoading(true)
     setError(null)
-    fetchCalendar(bounds, sensor, controller.signal)
+    fetchCalendar(bounds, view, controller.signal)
       .then((result) => setData(result))
       .catch((err: unknown) => {
         if (controller.signal.aborted) return

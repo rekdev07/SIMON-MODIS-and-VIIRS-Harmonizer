@@ -13,12 +13,9 @@ import { useHotspots } from '../hooks/useHotspots'
 import { useDataset } from '../hooks/useDataset'
 import { useCalendar } from '../hooks/useCalendar'
 import BurnCalendar from '../components/Calendar/BurnCalendar'
+import { type CalendarView } from '../types/calendar'
 import { type Bounds, type LatLngPoint } from '../types/hotspots'
-import {
-  DEFAULT_STATS_FILTERS,
-  type Sensor,
-  type StatsFilters,
-} from '../types/stats'
+import { DEFAULT_STATS_FILTERS, type StatsFilters } from '../types/stats'
 import { formatLatLng, parseLatLng, todayUtc } from '../utils/coordinates'
 
 /** First day with satellite data (start of MODIS); the API rejects earlier dates. */
@@ -53,12 +50,11 @@ function MapViewer() {
   // Area the calendar was loaded for; clicks on the calendar search this area
   // even if the user has started drawing a new one.
   const [calendarBounds, setCalendarBounds] = useState<Bounds | null>(null)
-  // Sensor of the calendar. MODIS and VIIRS counts are never added together
-  // (different pixel sizes), so the calendar shows one sensor at a time. Until
-  // the user picks one, default to MODIS (the long record since 2000) when it
-  // is loaded, otherwise VIIRS.
-  const [calendarSensorChoice, setCalendarSensorChoice] =
-    useState<Sensor | null>(null)
+  // What the calendar shows. Raw MODIS and VIIRS counts are never added
+  // together (different pixel sizes); the default is the harmonized series,
+  // where the server converts VIIRS to MODIS units so the 2000 → today record
+  // is continuous. Raw MODIS or VIIRS can still be picked.
+  const [calendarView, setCalendarView] = useState<CalendarView>('HARMONIZED')
   const [selectedMonth, setSelectedMonth] = useState<{
     year: number
     month: number
@@ -75,9 +71,6 @@ function MapViewer() {
   const center = manualCenter ?? geo.position
   const coordsValue = coordsText ?? formatLatLng(geo.position)
   const parsedCoords = parseLatLng(coordsValue)
-
-  const calendarSensor: Sensor =
-    calendarSensorChoice ?? (dataset?.instruments.MODIS ? 'MODIS' : 'VIIRS')
 
   const minDate = dataset?.min_date ?? API_MIN_DATE
   const maxDate = dataset?.max_date ?? todayUtc()
@@ -117,15 +110,15 @@ function MapViewer() {
     if (!canSave || !bounds) return
     hotspots.search({ bounds, startDate, endDate })
     setDashboardArea({ bounds, startDate, endDate })
-    calendar.load(bounds, calendarSensor)
+    calendar.load(bounds, calendarView)
     setCalendarBounds(bounds)
     setSelectedMonth(null)
   }
 
-  /** Reloads the calendar of the same area for the other sensor. */
-  const changeCalendarSensor = (sensor: Sensor) => {
-    setCalendarSensorChoice(sensor)
-    if (calendarBounds) calendar.load(calendarBounds, sensor)
+  /** Reloads the calendar of the same area for another view (harmonized or one sensor). */
+  const changeCalendarView = (next: CalendarView) => {
+    setCalendarView(next)
+    if (calendarBounds) calendar.load(calendarBounds, next)
   }
 
   // Drawing happens on the map, so starting to draw from the dashboard view
@@ -286,8 +279,8 @@ function MapViewer() {
                   data={calendar.data}
                   selected={selectedMonth}
                   onSelectMonth={selectMonth}
-                  sensor={calendarSensor}
-                  onSensorChange={changeCalendarSensor}
+                  view={calendarView}
+                  onViewChange={changeCalendarView}
                 />
               )}
             </div>

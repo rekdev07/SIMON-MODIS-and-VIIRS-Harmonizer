@@ -10,8 +10,8 @@ frontend. Read it before changing anything in `client/`.
   **rectangle** and a **date range**, and sees the fire hotspots detected by the MODIS and
   VIIRS satellite instruments (NASA FIRMS data) inside it.
 - All data comes from the **Hotspots API** in `server/` (read-only REST, no authentication).
-  The frontend does **not** download FIRMS data, does **not** harmonize sensors and does
-  **not** read the DuckDB database directly.
+  The frontend does **not** download FIRMS data, does **not** harmonize sensors itself (the API
+  does, see `server/docs/harmonization.md`) and does **not** read the DuckDB database directly.
 
 ### Monorepo
 
@@ -19,7 +19,7 @@ frontend. Read it before changing anything in `client/`.
 SIMON-MODIS-and-VIIRS-Harmonizer/
 ├─ client/             this frontend (all work happens here)
 └─ server/             Flask + DuckDB Hotspots API (http://localhost:5000). NOT part of this app. Do not modify.
-   └─ harmonizer/      placeholder for harmonization logic. Do not modify.
+   └─ harmonizer/      MODIS/VIIRS harmonization math used by the API. Do not modify.
 ```
 
 All paths below are relative to `client/`. Run every command (`npm`, `npx`) from
@@ -136,13 +136,19 @@ and this section.
 - Params: `lat1,lon1,lat2,lon2` (+ the same optional filters as `/hotspots`), **no dates**.
 - Returns hotspot counts per month for every loaded month: `months[]` (`year`, `month`, `count`,
   `modis`, `viirs`, `partial`), `years[]`, `monthly_median` (12 values, index 0 = January, null when
-  no full month), `coverage`, `harmonized` (false for now), `total`; `message` only when `total` is 0.
+  no full month), `coverage`, `harmonized`, `total`; `message` only when `total` is 0.
+- `harmonized=true` (instead of `instrument`): `count` is the harmonized value (MODIS Terra+Aqua
+  units, decimals), each month adds `source` (`terra_scaled`/`modis`/`average`/`viirs_eq`),
+  `modis_eq`, `terra`, `aqua`, `viirs_day`, `viirs_night`, `low_count`, and the body adds
+  `harmonization` (ratios, fit period, cutoffs, `reliability.small_area` / `low_count`).
 - A month **missing** from `months` = no data loaded (draw hatched); `count: 0` = observed, no fires.
   `partial` months are left out of medians and anomalies.
 - Drawn by `components/Calendar/BurnCalendar.tsx` in a panel under the map (year × month heatmap,
   YlOrRd counts / RdBu anomaly vs median, CSV export); clicking a month searches that month's
-  hotspots on the map. The UI **always sends `instrument`** (MODIS | VIIRS switch, MODIS by default
-  when loaded) so the two sensors are never added together before harmonization.
+  hotspots on the map. Series switch: **Harmonized** (default, `harmonized=true`; a colored bar
+  under each month shows its source, and an amber warning appears when the area is under ~1° × 1°
+  or its typical month is below the reliable count) | **MODIS raw** | **VIIRS raw** (`instrument`).
+  Raw MODIS and VIIRS counts are never added together in the UI.
 - Not the dashboard's chart 11 (`/stats/calendar`, year × day within the saved dates): this one
   always covers the whole loaded history, by month, with medians.
 
@@ -218,7 +224,7 @@ then needs a test; update this section.
 ## 10. Out of scope
 
 Any change to `server/` or `server/harmonizer/` (ask the backend owner instead);
-downloading from FIRMS; harmonization/calibration between sensors; authentication;
+downloading from FIRMS; harmonization math in the client (it lives in the API); authentication;
 direct database access. Never commit `node_modules/`, `dist/` or `.env*.local`.
 
 ## 11. Git workflow (agents)
