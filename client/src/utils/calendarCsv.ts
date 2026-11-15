@@ -44,20 +44,3 @@ export function buildCalendarCsv(
   })
   return [header, ...lines].join('\n') + '\n'
 }
-
-/**
- * Makes the browser save `text` as a file. A temporary object URL is used so
- * no server round trip is needed, and it is revoked right after the click.
- */
-export function downloadText(
-  filename: string,
-  text: string,
-  type = 'text/csv',
-) {
-  const url = URL.createObjectURL(new Blob([text], { type }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(url)
-}

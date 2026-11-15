@@ -1,5 +1,5 @@
-import { type CSSProperties, useMemo, useState } from 'react'
-import { Download } from 'lucide-react'
+import { type CSSProperties, useMemo, useRef, useState } from 'react'
+import { Download, ImageDown } from 'lucide-react'
 import {
   type CalendarData,
   type CalendarMonth,
@@ -16,7 +16,8 @@ import {
   formatCount,
   stepFor,
 } from '../../utils/calendarScale'
-import { buildCalendarCsv, downloadText } from '../../utils/calendarCsv'
+import { buildCalendarCsv } from '../../utils/calendarCsv'
+import { downloadElementPng, downloadText } from '../../utils/download'
 import LegendSwatch from './LegendSwatch'
 import Segmented from './Segmented'
 
@@ -168,6 +169,8 @@ function BurnCalendar({
 }: BurnCalendarProps) {
   const [mode, setMode] = useState<Mode>('counts')
   const [hovered, setHovered] = useState<CalendarMonth | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const sectionRef = useRef<HTMLElement>(null)
 
   const byKey = useMemo(
     () => new Map(data.months.map((m) => [`${m.year}-${m.month}`, m])),
@@ -212,12 +215,25 @@ function BurnCalendar({
     }
   }
 
+  const [w, s, e, n] = data.bbox.map((v) => v.toFixed(2))
+  const fileBase = `burn-calendar_${view}_${mode}_${s}_${w}_${n}_${e}`
+
   const download = () => {
-    const [w, s, e, n] = data.bbox
     downloadText(
       `burn-calendar_${view}_${s}_${w}_${n}_${e}.csv`,
       buildCalendarCsv(data, view),
     )
+  }
+
+  /** Saves the calendar as it looks now (series and colors) as a PNG. */
+  const downloadPng = async () => {
+    if (!sectionRef.current) return
+    setExporting(true)
+    try {
+      await downloadElementPng(sectionRef.current, `${fileBase}.png`)
+    } finally {
+      setExporting(false)
+    }
   }
 
   const latestMedian = latestFull
@@ -233,7 +249,10 @@ function BurnCalendar({
       : `${view} raw`
 
   return (
-    <section className="flex flex-col gap-3 text-sm text-gray-800">
+    <section
+      ref={sectionRef}
+      className="flex flex-col gap-3 bg-white text-sm text-gray-800"
+    >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-bold">Burning activity calendar</h2>
@@ -258,7 +277,7 @@ function BurnCalendar({
             </p>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div data-export-ignore className="flex flex-wrap items-center gap-2">
           <Segmented
             label="Series"
             options={VIEW_OPTIONS}
@@ -277,6 +296,14 @@ function BurnCalendar({
             className="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs text-white transition hover:bg-blue-500"
           >
             <Download size={14} /> CSV
+          </button>
+          <button
+            type="button"
+            onClick={downloadPng}
+            disabled={exporting || data.months.length === 0}
+            className="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
+          >
+            <ImageDown size={14} /> {exporting ? 'Saving…' : 'PNG'}
           </button>
         </div>
       </header>
@@ -394,7 +421,7 @@ function BurnCalendar({
                             onBlur={() => setHovered(null)}
                             title={text}
                             aria-label={`${text}. Show on map.`}
-                            className={`relative h-full w-full rounded-sm tabular-nums transition hover:ring-2 hover:ring-gray-800 ${
+                            className={`relative block h-full w-full rounded-sm tabular-nums transition hover:ring-2 hover:ring-gray-800 ${
                               isSelected ? 'ring-2 ring-blue-600' : ''
                             } ${
                               inRange

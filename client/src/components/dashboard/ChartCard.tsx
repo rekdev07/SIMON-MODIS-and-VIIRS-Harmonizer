@@ -1,4 +1,6 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
+import { ImageDown } from 'lucide-react'
+import { downloadElementPng } from '../../utils/download'
 
 /** Props of {@link ChartCard}. */
 type ChartCardProps = {
@@ -29,6 +31,10 @@ type ChartCardProps = {
  * Order of precedence: error → loading (only before any data) → empty →
  * chart. While a refetch is running the previous chart stays visible but
  * dimmed, so the layout does not jump every time a filter changes.
+ *
+ * Every card with a chart has a PNG button that saves the whole card (title,
+ * subtitle and chart), so the image still says what it shows once it is
+ * pasted into a report. The controls are left out of the image.
  */
 function ChartCard({
   number,
@@ -51,8 +57,26 @@ function ChartCard({
       : { text: emptyMessage, tone: 'text-gray-500' }
   }
 
+  const cardRef = useRef<HTMLElement>(null)
+  const [exporting, setExporting] = useState(false)
+
+  const downloadPng = async () => {
+    if (!cardRef.current) return
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+    setExporting(true)
+    try {
+      await downloadElementPng(cardRef.current, `chart-${number}_${slug}.png`)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <article
+      ref={cardRef}
       className={`flex min-w-0 flex-col rounded border border-gray-300 bg-white p-4 ${wide ? 'lg:col-span-2' : ''}`}
     >
       <header className="mb-2 flex items-start justify-between gap-3">
@@ -63,7 +87,20 @@ function ChartCard({
           </h3>
           {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
         </div>
-        {actions && <div className="flex shrink-0 gap-2">{actions}</div>}
+        <div data-export-ignore className="flex shrink-0 gap-2">
+          {actions}
+          {!placeholder && (
+            <button
+              type="button"
+              onClick={downloadPng}
+              disabled={exporting}
+              title="Download this chart as PNG"
+              className="flex items-center gap-1 rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+            >
+              <ImageDown size={14} /> {exporting ? '…' : 'PNG'}
+            </button>
+          )}
+        </div>
       </header>
       <div
         className={`min-h-0 flex-1 transition-opacity ${loading && !error ? 'opacity-50' : ''}`}

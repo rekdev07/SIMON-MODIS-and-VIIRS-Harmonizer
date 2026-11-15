@@ -42,6 +42,7 @@ type EChartProps = {
  * the whole option on every change (`notMerge`, so series removed by a filter
  * really disappear), a `ResizeObserver` keeps the canvas in sync with the
  * card width, and the instance is disposed on unmount to free the canvas.
+ * It renders at 2× or more so the chart's PNG download is sharp.
  */
 function EChart({ option, heightClass = 'h-72' }: EChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -50,7 +51,11 @@ function EChart({ option, heightClass = 'h-72' }: EChartProps) {
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    const chart = echarts.init(container)
+    // At least 2× resolution so the PNG export (also 2×) stays sharp on
+    // ordinary 1× screens; high-DPI screens keep their own ratio.
+    const chart = echarts.init(container, undefined, {
+      devicePixelRatio: Math.max(window.devicePixelRatio, 2),
+    })
     chartRef.current = chart
     const observer = new ResizeObserver(() => chart.resize())
     observer.observe(container)
