@@ -36,6 +36,16 @@ Real data (FIRMS JSON export, about 147 MB, not committed):
 python scripts/import_json.py data/raw/fire_archive_SV-C2_849193.json --db data/hotspots.duckdb
 ```
 
+Large FIRMS archives (hundreds of MB to GB, e.g. MODIS 2000–today + VIIRS 2012–today) do not
+fit in memory with `import_json.py`; the bulk importer applies the same rules in DuckDB SQL
+(about 1 minute for 6 million rows). `--replace` builds a new database and swaps it in:
+
+```bash
+python scripts/import_bulk.py ../test/MODIS/*.json ../test/VIIRS_SNPP/*.json --db data/hotspots.duckdb --replace
+python scripts/harmonize.py fit      # ratios for the harmonized calendar (docs/harmonization.md)
+python scripts/harmonize.py report   # validation report -> reports/harmonization/report.md
+```
+
 Or fake data for development:
 
 ```bash
@@ -94,6 +104,9 @@ curl "http://localhost:5000/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=
 
 # Burning activity calendar of an area: hotspots per month for every loaded year
 curl "http://localhost:5000/api/v1/calendar?lat1=14&lon1=-118&lat2=33&lon2=-86"
+
+# Same, harmonized: one continuous series 2000 → today in MODIS Terra+Aqua units
+curl "http://localhost:5000/api/v1/calendar?lat1=14&lon1=-118&lat2=33&lon2=-86&harmonized=true"
 
 # An area with no data → 200 + "No data found in the selected area"
 curl "http://localhost:5000/api/v1/hotspots?lat1=40&lon1=0&lat2=41&lon2=1&start_date=2013-04-01&end_date=2013-04-30"

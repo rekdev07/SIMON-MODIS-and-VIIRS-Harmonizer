@@ -168,3 +168,21 @@ Valid records per instrument:
 realistic fake hotspots over Mexico: MODIS 2001–today, VIIRS 2012–today, an April–June peak,
 and some NULL `frp`/`fire_type`. Point the API at it with
 `HOTSPOTS_DB_PATH=data/mock_hotspots.duckdb`. Use `--overwrite` to regenerate it.
+
+## Large files: the bulk importer
+
+`scripts/import_json.py` reads the whole file with Python, which is easy to follow but needs
+about 5–10× the file size in memory. For the full FIRMS archives (MODIS 700 MB, VIIRS 1.8 GB)
+use `scripts/import_bulk.py`: the **same rules** (sections 2–8) written as one DuckDB SQL query
+per file, which streams the JSON array.
+
+```bash
+# from server/, with the API stopped; --replace builds a new file and swaps it in at the end
+python scripts/import_bulk.py ../test/MODIS/*.json ../test/VIIRS_SNPP/*.json --db data/hotspots.duckdb --replace
+```
+
+Differences: `source` is filled as `<instrument>_<satellite>_SP` for the archive (standard
+processing) and `..._NRT` when the FIRMS `version` ends in `NRT` (near-real-time, no `type`
+field), e.g. `VIIRS_SNPP_NRT`. Rejections are counted per reason but not logged one by one.
+After importing, run `python scripts/harmonize.py fit` so the harmonized calendar uses ratios
+fitted on the new data (see [harmonization.md](harmonization.md)).
