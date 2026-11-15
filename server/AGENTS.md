@@ -53,10 +53,12 @@ server/
 │  ├─ geo.py                 rectangle normalization and validation (pure functions)
 │  ├─ repository.py          table DDL + parameterized SQL queries
 │  ├─ serializers.py         rows -> GeoJSON / JSON
+│  ├─ calendar.py            monthly counts -> calendar grid (zeros, partial months, medians)
 │  ├─ errors.py              API exceptions + global Flask error handlers
 │  ├─ network.py             LAN helpers: private-network CORS pattern, LAN IP discovery
 │  └─ routes/
 │     ├─ hotspots.py         GET /api/v1/hotspots
+│     ├─ calendar.py         GET /api/v1/calendar
 │     ├─ stats.py            GET /api/v1/stats/* (13 dashboard endpoints)
 │     └─ meta.py             GET /api/v1/dataset, GET /health
 ├─ scripts/
@@ -170,6 +172,18 @@ GeoJSON (default): `FeatureCollection`, coordinates `[longitude, latitude]`, pro
 No results → **HTTP 200**, empty list, and `"message": "No data found in the selected area"`.
 The `message` key appears **only** when there are no results.
 
+### `GET /api/v1/calendar`
+Burning activity calendar: hotspot counts per year-month for a rectangle (`lat1..lon2`, same
+optional filters as `/hotspots`, no dates). SQL `GROUP BY year(acq_date), month(acq_date)` with
+`count(*) FILTER` for the MODIS/VIIRS split. Response: `bbox`, `coverage` (min/max `acq_date` of the
+table, or of one instrument when filtered; null if empty), `harmonized` (false for now), `total`,
+`months` (every month inside coverage, zeros filled, `partial` when coverage cuts it), `years`
+(totals, `partial`), `monthly_median` (12 values, median over full months only, null if none).
+`message` only when `total` is 0. Grid logic lives in `app/calendar.py` (pure functions).
+Not the same as `/api/v1/stats/calendar`: that one is chart 11 of the dashboard (year × **day**
+of year, limited to the request's dates, any metric); `/calendar` is the long-term **month**
+grid with medians used for the challenge's "current vs historical median" comparison.
+
 ### `GET /api/v1/stats/*` (dashboard)
 
 Contract: `docs/dashboard-api.md`. 13 endpoints: `summary`, `timeseries`, `distribution`,
@@ -260,7 +274,7 @@ python -m pydoc app.geo          # code docs
 
 Downloading from FIRMS; harmonization/calibration between sensors (`harmonizer/`);
 coverage regions or state/country validation; authentication; free-form polygons;
-anomaly endpoints (later); any change to `client/` or `harmonizer/`.
+any change to `client/` or `harmonizer/`.
 Never commit `data/` (raw JSON, `.duckdb`).
 
 ## 14. Git workflow (agents)

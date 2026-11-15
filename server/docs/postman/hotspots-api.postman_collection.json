@@ -493,6 +493,59 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Calendar (monthly counts)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has calendar keys\", () => pm.expect(b).to.include.keys(\"bbox\", \"coverage\", \"harmonized\", \"total\", \"months\", \"years\", \"monthly_median\"));",
+                  "pm.test(\"Twelve monthly medians\", () => pm.expect(b.monthly_median).to.have.lengthOf(12));",
+                  "pm.test(\"Total equals sum of months\", () => pm.expect(b.months.reduce((s, m) => s + m.count, 0)).to.eql(b.total));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Hotspot counts per month for the whole loaded period (see docs/api.md).",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calendar?lat1=14&lon1=-118&lat2=33&lon2=-86",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "calendar"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "14"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-118"
+                },
+                {
+                  "key": "lat2",
+                  "value": "33"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-86"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },

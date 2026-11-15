@@ -38,6 +38,8 @@ Each request has small automatic checks (called *tests*), for example "status is
 
 The checks expect the **real data** (`fire_archive_SV-C2_849193.json`, Mexico 2013). With fake
 data, the "Hotspots: Yucatán" checks may still pass, but the exact numbers will differ.
+The **Calendar (monthly counts)** request checks the shape of the calendar (12 monthly
+medians, total = sum of the months), so it passes with any data.
 
 The **Stats (dashboard)** folder has one request per `/api/v1/stats/*` endpoint (Durango, 2013),
 an empty-area case and three 400 cases. Its checks only look at the shape of the answer

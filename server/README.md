@@ -92,6 +92,9 @@ curl "http://localhost:5000/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=
 # Same, high-confidence night detections only, plain JSON, first 100
 curl "http://localhost:5000/api/v1/hotspots?lat1=21.7&lon1=-90.4&lat2=19.5&lon2=-87.4&start_date=2013-04-01&end_date=2013-04-30&confidence_min=high&daynight=N&format=json&limit=100"
 
+# Burning activity calendar of an area: hotspots per month for every loaded year
+curl "http://localhost:5000/api/v1/calendar?lat1=14&lon1=-118&lat2=33&lon2=-86"
+
 # An area with no data → 200 + "No data found in the selected area"
 curl "http://localhost:5000/api/v1/hotspots?lat1=40&lon1=0&lat2=41&lon2=1&start_date=2013-04-01&end_date=2013-04-30"
 

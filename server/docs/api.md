@@ -124,6 +124,71 @@ curl "http://localhost:5000/api/v1/hotspots?lat1=14&lon1=-118&lat2=33&lon2=-86&s
 
 ---
 
+## `GET /api/v1/calendar`
+
+The **burning activity calendar** of an area: how many hotspots were detected in each
+month of every year the database holds. The frontend draws it as a year × month heatmap.
+
+Counting happens inside DuckDB (`GROUP BY year, month`), so the answer is small (12 rows
+per year) even when the area has millions of detections, and it never truncates.
+
+### Parameters
+
+| Name | Required | Values | Default | Meaning |
+|---|---|---|---|---|
+| `lat1`, `lon1`, `lat2`, `lon2` | yes | same as `/hotspots` | | Rectangle corners, any order |
+| `confidence_min`, `daynight`, `instrument`, `vegetation_only` | no | same as `/hotspots` | | Same filters as `/hotspots` |
+
+There are **no dates**: the calendar always covers every loaded month, so the user can
+compare the whole history of the area.
+
+### Example
+
+```bash
+curl "http://localhost:5000/api/v1/calendar?lat1=14&lon1=-118&lat2=33&lon2=-86"
+```
+
+```json
+{
+  "bbox": [-118.0, 14.0, -86.0, 33.0],
+  "coverage": { "start_date": "2013-01-01", "end_date": "2014-01-01" },
+  "harmonized": false,
+  "total": 367064,
+  "months": [
+    { "year": 2013, "month": 1, "count": 8149, "modis": 0, "viirs": 8149, "partial": false },
+    "... one entry per month ...",
+    { "year": 2014, "month": 1, "count": 75, "modis": 0, "viirs": 75, "partial": true }
+  ],
+  "years": [
+    { "year": 2013, "count": 366989, "partial": false },
+    { "year": 2014, "count": 75, "partial": true }
+  ],
+  "monthly_median": [8149.0, 17159.0, 41000.0, 93425.0, 137172.0, 41407.0,
+                     6381.0, 5286.0, 2348.0, 4413.0, 4079.0, 6170.0]
+}
+```
+
+How to read it:
+
+- **`coverage`** is the first and last day loaded in the database (for one instrument if
+  `instrument` is set), or `null` when the database is empty.
+- **`months`** has *every* month inside `coverage`, including months with `count: 0`.
+  A month that is **missing** means "no data loaded", while `0` means "observed, no fires".
+- **`partial: true`** means the coverage cuts the month (here only 1 January 2014 is
+  loaded). Its count is real but not comparable with full months.
+- **`modis` / `viirs`** split each count by instrument.
+- **`years`**: total per year; `partial` when any month of that year is missing or partial.
+- **`monthly_median[i]`** is the median count of month `i + 1` (index 0 = January) over the
+  **full** months only, or `null` if there is none. It is the "normal" level to compare the
+  current month against. The median is used rather than the mean so one extreme year does
+  not shift the reference.
+- **`harmonized`** is `false`: counts are raw MODIS + VIIRS detections. It will become
+  `true` once the harmonizer calibrates both sensors.
+- If the area has no hotspots at all, `total` is 0, the months are still listed with zeros,
+  and `"message": "No data found in the selected area"` is added.
+
+---
+
 ## `GET /api/v1/dataset`
 
 Summary of everything in the database. The frontend uses it to limit its date pickers
