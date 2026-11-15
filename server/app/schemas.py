@@ -321,3 +321,91 @@ def parse_hotspot_query(
         offset=params.offset,
         format=params.format,
     )
+
+
+class CalendarQueryParams(BaseModel):
+    """Raw query parameters of ``GET /api/v1/calendar``, validated field by field.
+
+    Same rectangle and optional filters as :class:`HotspotQueryParams`, but no
+    dates, paging or format: the calendar always covers every month the
+    database holds, so the user can compare the whole history of an area.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    lat1: float = Field(allow_inf_nan=False)
+    lon1: float = Field(allow_inf_nan=False)
+    lat2: float = Field(allow_inf_nan=False)
+    lon2: float = Field(allow_inf_nan=False)
+    confidence_min: Confidence = "low"
+    daynight: DayNight | None = None
+    instrument: Instrument | None = None
+    vegetation_only: bool = False
+
+    @field_validator("confidence_min", mode="before")
+    @classmethod
+    def _lowercase(cls, value: Any) -> Any:
+        """Lower-case ``confidence_min`` so ``HIGH`` and ``high`` are equivalent."""
+        return value.strip().lower() if isinstance(value, str) else value
+
+    @field_validator("daynight", "instrument", mode="before")
+    @classmethod
+    def _uppercase(cls, value: Any) -> Any:
+        """Upper-case enum-like strings; an empty string means "not provided"."""
+        if isinstance(value, str):
+            value = value.strip().upper()
+            return value or None
+        return value
+
+
+class CalendarQuery(BaseModel):
+    """Fully validated calendar query, ready for the repository.
+
+    Attributes:
+        bbox: Normalized rectangle.
+        confidence_min: Lowest confidence category to include.
+        daynight: ``"D"``, ``"N"`` or None for both.
+        instrument: ``"MODIS"``, ``"VIIRS"`` or None for both.
+        vegetation_only: Exclude ``fire_type`` 1, 2 and 3 (keeping NULL).
+    """
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    bbox: BoundingBox
+    confidence_min: Confidence
+    daynight: DayNight | None
+    instrument: Instrument | None
+    vegetation_only: bool
+
+
+def parse_calendar_query(args: dict[str, Any]) -> CalendarQuery:
+    """Validate the query string of ``GET /api/v1/calendar``.
+
+    How: per-field validation with :class:`CalendarQueryParams`, then
+    rectangle normalization with :func:`app.geo.normalize_rectangle`
+    (corners in any order, non-degenerate box).
+
+    Args:
+        args: Query parameters (first value of each key).
+
+    Returns:
+        The validated query.
+
+    Raises:
+        InvalidParameterError: On the first invalid or missing parameter.
+    """
+    try:
+        params = CalendarQueryParams.model_validate(args)
+    except ValidationError as exc:
+        raise first_error(exc) from None
+    try:
+        bbox = normalize_rectangle(params.lat1, params.lon1, params.lat2, params.lon2)
+    except RectangleError as exc:
+        raise InvalidParameterError(exc.parameter, exc.message) from None
+    return CalendarQuery(
+        bbox=bbox,
+        confidence_min=params.confidence_min,
+        daynight=params.daynight,
+        instrument=params.instrument,
+        vegetation_only=params.vegetation_only,
+    )

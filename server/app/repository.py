@@ -19,7 +19,8 @@ from typing import Any
 
 import duckdb
 
-from app.schemas import HotspotQuery, confidence_categories_at_least
+from app.geo import BoundingBox
+from app.schemas import CalendarQuery, HotspotQuery, confidence_categories_at_least
 
 #: DDL of the ``hotspots`` table. The primary key is the natural identity of a
 #: detection (same instrument, satellite, place and instant), which lets the
@@ -239,6 +240,41 @@ def _rows_to_dicts(cursor: duckdb.DuckDBPyConnection, rows: list[tuple[Any, ...]
     return [dict(zip(names, row)) for row in rows]
 
 
+def _filter_conditions(query: HotspotQuery | CalendarQuery) -> tuple[list[str], list[Any]]:
+    """Build the WHERE conditions shared by the hotspot list and the calendar.
+
+    Covers the rectangle and the optional filters (confidence, day/night,
+    instrument, vegetation); dates are added by the caller because the
+    calendar has none. See :func:`build_hotspots_sql` for how each filter
+    becomes SQL.
+
+    Args:
+        query: Validated hotspot or calendar query.
+
+    Returns:
+        ``(conditions, params)``: SQL fragments to join with ``AND`` and their
+        ``?`` values in the same order.
+    """
+    bbox: BoundingBox = query.bbox
+    conditions = ["latitude BETWEEN ? AND ?", "longitude BETWEEN ? AND ?"]
+    params: list[Any] = [bbox.min_lat, bbox.max_lat, bbox.min_lon, bbox.max_lon]
+
+    if query.confidence_min != "low":
+        categories = confidence_categories_at_least(query.confidence_min)
+        # Only the number of "?" placeholders depends on input; values are parameters.
+        conditions.append(f"confidence IN ({', '.join('?' for _ in categories)})")
+        params.extend(categories)
+    if query.daynight is not None:
+        conditions.append("daynight = ?")
+        params.append(query.daynight)
+    if query.instrument is not None:
+        conditions.append("instrument = ?")
+        params.append(query.instrument)
+    if query.vegetation_only:
+        conditions.append("(fire_type IS NULL OR fire_type NOT IN (1, 2, 3))")
+    return conditions, params
+
+
 def build_hotspots_sql(query: HotspotQuery) -> tuple[str, list[Any]]:
     """Build the SQL text and parameter list for a hotspot search.
 
@@ -269,34 +305,9 @@ def build_hotspots_sql(query: HotspotQuery) -> tuple[str, list[Any]]:
     Returns:
         ``(sql, params)`` ready for ``cursor.execute``.
     """
-    bbox = query.bbox
-    conditions = [
-        "latitude BETWEEN ? AND ?",
-        "longitude BETWEEN ? AND ?",
-        "acq_date BETWEEN ? AND ?",
-    ]
-    params: list[Any] = [
-        bbox.min_lat,
-        bbox.max_lat,
-        bbox.min_lon,
-        bbox.max_lon,
-        query.start_date,
-        query.end_date,
-    ]
-
-    if query.confidence_min != "low":
-        categories = confidence_categories_at_least(query.confidence_min)
-        # Only the number of "?" placeholders depends on input; values are parameters.
-        conditions.append(f"confidence IN ({', '.join('?' for _ in categories)})")
-        params.extend(categories)
-    if query.daynight is not None:
-        conditions.append("daynight = ?")
-        params.append(query.daynight)
-    if query.instrument is not None:
-        conditions.append("instrument = ?")
-        params.append(query.instrument)
-    if query.vegetation_only:
-        conditions.append("(fire_type IS NULL OR fire_type NOT IN (1, 2, 3))")
+    conditions, params = _filter_conditions(query)
+    conditions.append("acq_date BETWEEN ? AND ?")
+    params.extend([query.start_date, query.end_date])
 
     sql = (
         f"SELECT {_SELECT_COLUMNS} FROM hotspots "
@@ -358,6 +369,65 @@ def dataset_summary(cursor: duckdb.DuckDBPyConnection) -> dict[str, Any]:
         "instruments": {name: int(count) for name, count in instruments.items()},
         "bbox": None if total == 0 else [min_lon, min_lat, max_lon, max_lat],
     }
+
+
+def calendar_counts(
+    cursor: duckdb.DuckDBPyConnection, query: CalendarQuery
+) -> list[tuple[int, int, int, int, int]]:
+    """Count the hotspots of an area per calendar month, split by instrument.
+
+    How: one ``GROUP BY year, month`` over ``acq_date`` (UTC day), so DuckDB
+    returns at most 12 rows per year no matter how many detections exist.
+    Why: a 25-year history can hold millions of points, far more than the
+    hotspot list can send; the calendar only needs the totals.
+    ``count(*) FILTER (WHERE ...)`` gives the MODIS and VIIRS shares in the
+    same pass. Months with no detections are absent (the caller fills zeros).
+
+    Args:
+        cursor: Per-request DuckDB cursor.
+        query: Validated calendar query (rectangle + optional filters).
+
+    Returns:
+        ``(year, month, total, modis, viirs)`` tuples ordered by year and month.
+    """
+    conditions, params = _filter_conditions(query)
+    sql = (
+        "SELECT year(acq_date) AS y, month(acq_date) AS m, count(*), "
+        "count(*) FILTER (WHERE instrument = 'MODIS'), "
+        "count(*) FILTER (WHERE instrument = 'VIIRS') "
+        f"FROM hotspots WHERE {' AND '.join(conditions)} "
+        "GROUP BY y, m ORDER BY y, m"
+    )
+    return [tuple(int(v) for v in row) for row in cursor.execute(sql, params).fetchall()]
+
+
+def data_coverage(
+    cursor: duckdb.DuckDBPyConnection, instrument: str | None = None
+) -> tuple[date, date] | None:
+    """Return the first and last ``acq_date`` held in the database.
+
+    Why: the calendar must tell "no fires" (0, the area was observed) from
+    "no data" (outside the loaded period). Coverage is the whole table's date
+    span, not the area's, because an area with no fires is still covered.
+    When the calendar is limited to one instrument, only that instrument's
+    span counts.
+
+    Args:
+        cursor: Per-request DuckDB cursor.
+        instrument: ``"MODIS"``, ``"VIIRS"`` or None for both.
+
+    Returns:
+        ``(first_day, last_day)`` or None when there is no matching data.
+    """
+    if instrument is None:
+        row = cursor.execute("SELECT min(acq_date), max(acq_date) FROM hotspots").fetchone()
+    else:
+        row = cursor.execute(
+            "SELECT min(acq_date), max(acq_date) FROM hotspots WHERE instrument = ?", [instrument]
+        ).fetchone()
+    if row is None or row[0] is None:
+        return None
+    return row[0], row[1]
 
 
 def ping(cursor: duckdb.DuckDBPyConnection) -> None:
