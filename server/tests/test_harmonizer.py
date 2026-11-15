@@ -29,6 +29,7 @@ from harmonizer.method import (
     error_metrics,
     fit_ratios,
     modis_eq,
+    month_starts,
     seasonal_check,
     terra_factor,
 )
@@ -49,14 +50,6 @@ def _poisson(rng: random.Random, lam: float) -> int:
         if p <= limit:
             return k
         k += 1
-
-
-def _months(first: date, last: date) -> list[date]:
-    out, y, m = [], first.year, first.month
-    while (y, m) <= (last.year, last.month):
-        out.append(date(y, m, 1))
-        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
-    return out
 
 
 def synthetic(month: date, activity: float, rng: random.Random, box: tuple[int, int] | None = None,
@@ -82,7 +75,7 @@ def seasonal_activity(month: date, peak: float = 3000.0) -> float:
 
 def test_fit_recovers_known_ratios() -> None:
     rng = random.Random(1)
-    rows = [synthetic(m, seasonal_activity(m), rng) for m in _months(date(2013, 1, 1), date(2015, 12, 1))]
+    rows = [synthetic(m, seasonal_activity(m), rng) for m in month_starts(date(2013, 1, 1), date(2015, 12, 1))]
     ratios = fit_ratios(rows)
     assert ratios.day == pytest.approx(R_DAY, rel=0.02)
     assert ratios.night == pytest.approx(R_NIGHT, rel=0.03)
@@ -107,7 +100,7 @@ def test_modis_eq_divides_day_and_night_separately() -> None:
 
 def test_terra_factor_recovers_known_share() -> None:
     rng = random.Random(2)
-    rows = [synthetic(m, seasonal_activity(m), rng, viirs=False) for m in _months(date(2003, 1, 1), date(2011, 12, 1))]
+    rows = [synthetic(m, seasonal_activity(m), rng, viirs=False) for m in month_starts(date(2003, 1, 1), date(2011, 12, 1))]
     factor, terra, aqua = terra_factor(rows)
     assert factor == pytest.approx(1 / TERRA_SHARE, rel=0.01)
     assert terra > 0 and aqua > terra
@@ -124,7 +117,7 @@ def test_cross_validation_is_perfect_without_noise() -> None:
 def test_cross_validation_boxes_has_larger_error_than_national() -> None:
     rng = random.Random(3)
     boxes = [synthetic(m, seasonal_activity(m, peak=60), rng, box=(b, 0))
-             for m in _months(date(2013, 1, 1), date(2014, 12, 1)) for b in range(10)]
+             for m in month_starts(date(2013, 1, 1), date(2014, 12, 1)) for b in range(10)]
     national = aggregate_by_month(boxes)
     assert cross_validate(national).wape < cross_validate(boxes).wape
     assert fit_ratios(national).day == pytest.approx(fit_ratios(boxes).day)
@@ -132,7 +125,7 @@ def test_cross_validation_boxes_has_larger_error_than_national() -> None:
 
 def test_seasonal_check_finds_equal_ratios() -> None:
     rng = random.Random(4)
-    rows = [synthetic(m, seasonal_activity(m), rng) for m in _months(date(2013, 1, 1), date(2016, 12, 1))]
+    rows = [synthetic(m, seasonal_activity(m), rng) for m in month_starts(date(2013, 1, 1), date(2016, 12, 1))]
     dry, rest = seasonal_check(rows, frozenset({1, 2, 3, 4, 5}))
     assert dry.total == pytest.approx(rest.total, rel=0.05)
 
@@ -174,7 +167,7 @@ def test_series_has_no_artificial_jumps_in_2002_and_2012() -> None:
     rng = random.Random(5)
     activity = 2000.0
     months = []
-    for m in _months(date(2000, 11, 1), date(2027, 12, 1)):
+    for m in month_starts(date(2000, 11, 1), date(2027, 12, 1)):
         months.append(synthetic(m, activity, rng, aqua=m >= date(2002, 7, 4), viirs=m >= date(2012, 2, 1)))
     fit = fit_ratios(r for r in months if date(2012, 2, 1) <= r.month <= date(2025, 12, 1))
     factor, _, _ = terra_factor(r for r in months if date(2003, 1, 1) <= r.month <= date(2011, 12, 1))
@@ -196,7 +189,7 @@ def test_series_has_no_artificial_jumps_in_2002_and_2012() -> None:
 def test_series_after_modis_end_uses_viirs_eq_without_jump() -> None:
     rng = random.Random(6)
     cutoffs = Cutoffs(date(2002, 8, 1), date(2012, 2, 1), modis_end=date(2020, 12, 1))
-    months = [synthetic(m, 1500.0, rng) for m in _months(date(2019, 1, 1), date(2022, 12, 1))]
+    months = [synthetic(m, 1500.0, rng) for m in month_starts(date(2019, 1, 1), date(2022, 12, 1))]
     fit = fit_ratios(r for r in months if r.month.year < 2021)
     points = continuous_series(months, fit, 2.2, cutoffs)
     assert points[-1].source == SOURCE_VIIRS_EQ

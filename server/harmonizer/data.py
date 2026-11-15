@@ -127,26 +127,3 @@ def sensor_coverage(cursor: duckdb.DuckDBPyConnection) -> dict[str, tuple[date, 
     ).fetchall():
         coverage[name] = (first, last)
     return coverage
-
-
-def missing_days(cursor: duckdb.DuckDBPyConnection, satellite: str, start: date, end: date) -> int:
-    """Count days in ``[start, end]`` with **no** detection at all from a satellite.
-
-    Over a country-sized area a satellite always sees some hotspot, so a whole
-    day with none usually means missing data (instrument outage), not "no fire".
-
-    Args:
-        cursor: DuckDB cursor.
-        satellite: ``Terra``, ``Aqua`` or ``SNPP``.
-        start: First day.
-        end: Last day.
-
-    Returns:
-        Number of days without any detection.
-    """
-    row = cursor.execute(
-        "SELECT count(*) FROM generate_series(?::DATE, ?::DATE, INTERVAL 1 DAY) g(d) "
-        "WHERE CAST(d AS DATE) NOT IN (SELECT DISTINCT acq_date FROM hotspots WHERE satellite = ?)",
-        [start, end, satellite],
-    ).fetchone()
-    return int(row[0])

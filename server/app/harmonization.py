@@ -24,7 +24,7 @@ from app.calendar import build_calendar
 from app.schemas import CalendarQuery
 from harmonizer.config import SMALL_AREA_DEG2, HarmonizationConfig
 from harmonizer.data import monthly_counts, sensor_coverage
-from harmonizer.method import Cutoffs, MonthCounts, continuous_series
+from harmonizer.method import Cutoffs, MonthCounts, continuous_series, month_starts
 from harmonizer.params import HarmonizationParams, fit_params, load_params
 
 _cache: dict[tuple[str, float], HarmonizationParams] = {}
@@ -74,15 +74,6 @@ def _covers(sensor: tuple[date, date] | None, union: tuple[date, date], month: d
     return sensor[0] <= max(month, union[0]) and sensor[1] >= min(month_end, union[1])
 
 
-def _month_starts(first: date, last: date) -> list[date]:
-    """Every first-of-month from ``first``'s month to ``last``'s."""
-    out, y, m = [], first.year, first.month
-    while (y, m) <= (last.year, last.month):
-        out.append(date(y, m, 1))
-        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
-    return out
-
-
 def build_harmonized_calendar(
     cursor: duckdb.DuckDBPyConnection,
     query: CalendarQuery,
@@ -119,7 +110,7 @@ def build_harmonized_calendar(
             strict_vegetation=False,
         )
         by_month = {r.month: r for r in rows}
-        months = [by_month.get(m, MonthCounts(m)) for m in _month_starts(*coverage)]
+        months = [by_month.get(m, MonthCounts(m)) for m in month_starts(*coverage)]
         cutoffs = Cutoffs(config.aqua_start, config.viirs_start, config.modis_end)
         points = continuous_series(
             months, params.ratios, params.terra_factor, cutoffs,

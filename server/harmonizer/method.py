@@ -30,7 +30,7 @@ from data with :func:`fit_ratios` and :func:`terra_factor`.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date
 
@@ -522,14 +522,22 @@ def relative_change(value: float, reference: float) -> float:
     return _ratio(value, reference) - 1
 
 
-def as_month_counts(record: Mapping[str, object]) -> MonthCounts:
-    """Build a :class:`MonthCounts` from a dict with the same field names.
+def month_starts(first: date, last: date) -> list[date]:
+    """Every first-of-month from ``first``'s month to ``last``'s month, inclusive.
 
     Args:
-        record: Dict with ``month`` and any of the count fields.
+        first: Any day of the first month.
+        last: Any day of the last month.
 
     Returns:
-        The dataclass.
+        First days of the months, in order.
+
+    Example:
+        >>> month_starts(date(2013, 11, 5), date(2014, 1, 1))
+        [datetime.date(2013, 11, 1), datetime.date(2013, 12, 1), datetime.date(2014, 1, 1)]
     """
-    keys = MonthCounts.__dataclass_fields__.keys()
-    return MonthCounts(**{k: v for k, v in record.items() if k in keys})  # type: ignore[arg-type]
+    out, y, m = [], first.year, first.month
+    while (y, m) <= (last.year, last.month):
+        out.append(date(y, m, 1))
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return out

@@ -31,6 +31,7 @@ from harmonizer.method import (
     error_metrics,
     fit_ratios,
     modis_eq,
+    month_starts,
     predict_errors,
     relative_change,
     seasonal_check,
@@ -302,15 +303,6 @@ def check_proportionality(boxes: Sequence[MonthCounts]) -> dict[str, Any]:
     }
 
 
-def _month_iter(first: date, last: date) -> list[date]:
-    """Every first-of-month from ``first`` to ``last`` (inclusive)."""
-    out, y, m = [], first.year, first.month
-    while (y, m) <= (last.year, last.month):
-        out.append(date(y, m, 1))
-        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
-    return out
-
-
 def check_gaps(
     cursor: duckdb.DuckDBPyConnection, config: HarmonizationConfig, start: date, end: date
 ) -> dict[str, Any]:
@@ -358,7 +350,7 @@ def check_gaps(
             normal[(box, m)] = statistics.median(vals) if vals else 0
     eligible = zero = 0
     examples = []
-    for month in _month_iter(start, end):
+    for month in month_starts(start, end):
         if month.month not in config.dry_months:
             continue
         for box in boxes:

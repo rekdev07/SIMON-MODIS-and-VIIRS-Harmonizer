@@ -25,7 +25,7 @@ from typing import Any
 
 import duckdb
 
-from harmonizer.config import BOX_SIZE_DEG, HarmonizationConfig
+from harmonizer.config import HarmonizationConfig
 from harmonizer.data import monthly_counts
 from harmonizer.method import Ratios, fit_ratios, terra_factor
 
@@ -185,7 +185,3 @@ def load_params(cursor: duckdb.DuckDBPyConnection) -> HarmonizationParams | None
         terra_fit_end=terra[4],
         computed_at=day[5],
     )
-
-
-#: Re-exported for callers that need the validation box size.
-__all__ = ["BOX_SIZE_DEG", "HarmonizationParams", "fit_params", "load_params", "save_params", "TABLE"]
