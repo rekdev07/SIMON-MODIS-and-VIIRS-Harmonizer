@@ -1,11 +1,17 @@
 import { type ReactNode } from 'react'
 
-type SideBar = {
+/** Props of {@link SideBar}. */
+type SideBarProps = {
   children: ReactNode
 }
 
-function SideBar({ children }: SideBar) {
-  return <section className='bg-gray-50 p-6'>{children}</section>
+/** Left column of the map viewer; scrolls on its own so the map stays full height. */
+function SideBar({ children }: SideBarProps) {
+  return (
+    <section className="h-screen overflow-y-auto bg-gray-50 p-6">
+      {children}
+    </section>
+  )
 }
 
 export default SideBar
