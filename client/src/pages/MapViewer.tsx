@@ -1,10 +1,54 @@
+import { useState } from 'react'
 import SideBar from '../components/ScreenViewer/SideBar'
+import TextField from '../components/fields/TextField'
+import DatePicker from '../components/fields/DatePicker'
 
 function MapViewer() {
+  const [nombre, setNombre] = useState('')
+  const [fecha, setFecha] = useState('')
+
   return (
-    <div>
+    <div className="min-h-screen p-8">
       <SideBar>
-        <h1>Sidebar</h1>
+        <h1 className="mb-6 text-xl font-bold">SIMON</h1>
+        <p>Paso 1. Elige un lugar</p>
+        <div className="flex flex-col gap-5">
+          <TextField
+            label="Coordenadas"
+            name="nombre"
+            value={nombre}
+            onChange={setNombre}
+            placeholder="Ej. Latidudad, Longitud"
+            required
+          />
+
+          <p>Paso 2. Dibuja el área deseada</p>
+
+          <p>Paso 3. Ingresar el rango de fechas a mostrar</p>
+          <DatePicker
+            label="Inicio"
+            name="fecha"
+            value={fecha}
+            onChange={setFecha}
+            required
+          />
+          <DatePicker
+            label="Fin"
+            name="fecha"
+            value={fecha}
+            onChange={setFecha}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => {
+              console.log({ nombre, fecha })
+            }}
+            className="rounded-lg bg-emerald-700 px-4 py-2.5 font-medium text-white hover:bg-emerald-800"
+          >
+            Guardar
+          </button>
+        </div>
       </SideBar>
     </div>
   )

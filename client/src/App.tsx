@@ -1,9 +1,8 @@
+import MapViewer from './pages/MapViewer'
 function App() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950">
-      <h1 className="text-4xl font-bold text-white">
-        SIMON · MODIS & VIIRS Harmonizer
-      </h1>
+    <main>
+      <MapViewer />
     </main>
   )
 }
