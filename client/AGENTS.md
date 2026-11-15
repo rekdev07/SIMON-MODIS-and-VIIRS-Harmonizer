@@ -88,6 +88,10 @@ Components never call `fetch` directly and contain no URL building.
   `[longitude, latitude]` order in GeoJSON vs `[lat, lng]` in Leaflet, inclusive UTC dates,
   `truncated` handling, etc.
 - Inline comments only where the logic is not obvious.
+- **Plain, squared look** (same as the side panel): `rounded` (4 px) or `rounded-sm`, `border-gray-300`
+  borders, flat fills, **no shadows** (`shadow*`) and no `rounded-lg`/`xl`/`2xl`. Active segmented
+  options are `bg-blue-600 text-white`; chart bars have square corners. Round dots are fine for
+  point markers in legends.
 - **Styling with Tailwind utility classes**; no inline `style` except for values computed
   at runtime. Leaflet needs its CSS (`leaflet/dist/leaflet.css`) and a container with an
   explicit height.

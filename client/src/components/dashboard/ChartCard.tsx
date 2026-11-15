@@ -53,7 +53,7 @@ function ChartCard({
 
   return (
     <article
-      className={`flex min-w-0 flex-col rounded-xl bg-white p-4 shadow-sm ${wide ? 'lg:col-span-2' : ''}`}
+      className={`flex min-w-0 flex-col rounded border border-gray-300 bg-white p-4 ${wide ? 'lg:col-span-2' : ''}`}
     >
       <header className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0">

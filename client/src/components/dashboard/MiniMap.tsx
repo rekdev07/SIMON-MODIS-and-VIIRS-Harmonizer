@@ -26,7 +26,7 @@ function MiniMap({ bounds, children }: MiniMapProps) {
       key={JSON.stringify(leafletBounds)}
       bounds={leafletBounds}
       preferCanvas
-      className="h-80 w-full rounded-lg"
+      className="h-80 w-full rounded"
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

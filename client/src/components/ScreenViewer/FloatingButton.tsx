@@ -27,7 +27,7 @@ function FloatingButton({
       aria-pressed={active}
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-9 w-9 items-center justify-center rounded-2xl transition disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`flex h-9 w-9 items-center justify-center rounded-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
         active
           ? 'bg-blue-600 text-white'
           : 'bg-gray-50 text-gray-700 enabled:hover:bg-gray-200'

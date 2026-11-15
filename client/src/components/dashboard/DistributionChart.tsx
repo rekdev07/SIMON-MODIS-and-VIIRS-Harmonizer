@@ -79,7 +79,7 @@ function DistributionChart({
         name: sensor,
         type: 'bar',
         barGap: '10%',
-        itemStyle: { borderRadius: [4, 4, 0, 0] },
+        itemStyle: { borderRadius: 0 },
         color: SENSOR_COLORS[sensor],
         data: rows
           .filter((row) => row.sensor === sensor)

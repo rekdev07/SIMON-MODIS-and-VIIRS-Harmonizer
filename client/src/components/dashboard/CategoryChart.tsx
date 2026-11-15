@@ -98,7 +98,7 @@ function CategoryChart({ query, number, title, field }: CategoryChartProps) {
       series: sensorsIn(rows).map((sensor) => ({
         name: sensor,
         type: 'bar',
-        itemStyle: { borderRadius: [4, 4, 0, 0] },
+        itemStyle: { borderRadius: 0 },
         color: SENSOR_COLORS[sensor],
         data: categories.map((key) => {
           const row = rows.find((r) => r.sensor === sensor && keyOf(r) === key)

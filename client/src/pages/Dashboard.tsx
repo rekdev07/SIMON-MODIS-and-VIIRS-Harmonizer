@@ -151,7 +151,7 @@ function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
           <MonthlyChart query={query} />
         </div>
       ) : (
-        <div className="flex h-96 items-center justify-center rounded-xl bg-white p-8 text-center text-sm text-gray-600 shadow-sm">
+        <div className="flex h-96 items-center justify-center rounded border border-gray-300 bg-white p-8 text-center text-sm text-gray-600">
           Draw an area on the map, choose the dates and press Save to see the
           charts.
         </div>

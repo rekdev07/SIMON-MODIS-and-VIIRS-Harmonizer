@@ -63,7 +63,7 @@ function MonthlyChart({ query }: MonthlyChartProps) {
       series: sensorsIn(rows).map((sensor) => ({
         name: sensor,
         type: 'bar',
-        itemStyle: { borderRadius: [4, 4, 0, 0] },
+        itemStyle: { borderRadius: 0 },
         color: SENSOR_COLORS[sensor],
         data: MONTHS.map((_, index) => {
           const row = rows.find(

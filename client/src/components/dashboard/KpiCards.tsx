@@ -57,7 +57,10 @@ function KpiCards({ query }: KpiCardsProps) {
             </p>
             <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
               {KPIS.map((kpi) => (
-                <div key={kpi.key} className="rounded-lg bg-gray-50 px-3 py-2">
+                <div
+                  key={kpi.key}
+                  className="rounded border border-gray-200 bg-gray-50 px-3 py-2"
+                >
                   <dt className="text-xs text-gray-500">{kpi.label}</dt>
                   <dd className="text-xl font-semibold text-gray-900">
                     {formatNumber(

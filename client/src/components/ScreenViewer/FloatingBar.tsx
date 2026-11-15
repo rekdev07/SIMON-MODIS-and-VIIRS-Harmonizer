@@ -11,7 +11,7 @@ type FloatingBarProps = {
 function FloatingBar({ children, className = '' }: FloatingBarProps) {
   return (
     <div
-      className={`absolute flex flex-col gap-0.5 rounded-xl bg-gray-100 p-1.5 shadow ${className}`}
+      className={`absolute flex flex-col gap-0.5 rounded border border-gray-300 bg-gray-100 p-1 ${className}`}
     >
       {children}
     </div>

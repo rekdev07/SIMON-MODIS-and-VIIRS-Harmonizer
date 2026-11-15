@@ -56,7 +56,7 @@ function HourChart({ query }: HourChartProps) {
         return {
           name: `${satellite} (${sensor})`,
           type: 'bar',
-          itemStyle: { borderRadius: [4, 4, 0, 0] },
+          itemStyle: { borderRadius: 0 },
           color: SATELLITE_COLORS[satellite] ?? UNKNOWN_COLOR,
           data: HOURS.map((hour) => byHour.get(hour) ?? 0),
         }

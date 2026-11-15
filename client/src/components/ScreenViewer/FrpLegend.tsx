@@ -6,7 +6,7 @@ import { FRP_STEPS, FRP_UNKNOWN_COLOR } from '../../utils/frpColor'
  */
 function FrpLegend() {
   return (
-    <div className="absolute bottom-6 left-3 z-[1000] rounded-xl bg-gray-50/95 p-3 text-xs text-gray-700 shadow">
+    <div className="absolute bottom-6 left-3 z-[1000] rounded border border-gray-300 bg-gray-50/95 p-3 text-xs text-gray-700">
       <p className="mb-1.5 font-semibold">Fire intensity (FRP, MW)</p>
       <ul className="flex flex-col gap-1">
         {FRP_STEPS.map((step) => (

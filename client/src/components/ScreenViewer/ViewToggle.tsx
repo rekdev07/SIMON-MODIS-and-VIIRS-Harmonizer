@@ -25,7 +25,7 @@ function ViewToggle({ view, onChange }: ViewToggleProps) {
     <div
       role="radiogroup"
       aria-label="Main view"
-      className="mb-6 grid grid-cols-3 rounded-lg bg-gray-200 p-1"
+      className="mb-6 grid grid-cols-3 divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 bg-white"
     >
       {OPTIONS.map(({ view: option, label }) => {
         const active = view === option
@@ -36,10 +36,10 @@ function ViewToggle({ view, onChange }: ViewToggleProps) {
             role="radio"
             aria-checked={active}
             onClick={() => onChange(option)}
-            className={`truncate rounded-md px-1 py-1.5 text-sm font-medium transition ${
+            className={`truncate px-1 py-2 text-sm font-medium transition ${
               active
-                ? 'bg-blue-600 text-white shadow'
-                : 'text-gray-700 hover:bg-gray-300'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             {label}

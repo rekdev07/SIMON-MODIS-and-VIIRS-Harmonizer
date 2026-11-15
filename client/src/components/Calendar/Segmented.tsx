@@ -21,7 +21,7 @@ function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="flex rounded-lg bg-gray-200 p-0.5 text-xs"
+      className="flex divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 bg-white text-xs"
     >
       {options.map(([option, text]) => (
         <button
@@ -30,10 +30,10 @@ function Segmented<T extends string>({
           role="radio"
           aria-checked={value === option}
           onClick={() => onChange(option)}
-          className={`rounded-md px-3 py-1 transition ${
+          className={`px-3 py-1 transition ${
             value === option
-              ? 'bg-white font-semibold shadow'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-blue-600 font-semibold text-white'
+              : 'text-gray-700 hover:bg-gray-100'
           }`}
         >
           {text}

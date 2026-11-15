@@ -205,12 +205,10 @@ function BurnCalendar({
       const scale = mode === 'counts' ? countScale : ANOMALY_SCALE
       text = scale.find((s) => s.color === color)?.text ?? text
     }
-    const source = m.source ? SOURCE_STYLE[m.source].color : null
     return {
       backgroundColor: color,
       color: text,
       backgroundImage: m.partial ? PARTIAL_OVERLAY : undefined,
-      boxShadow: source ? `inset 0 -3px 0 ${source}` : undefined,
     }
   }
 
@@ -276,7 +274,7 @@ function BurnCalendar({
           <button
             type="button"
             onClick={download}
-            className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white transition hover:bg-blue-500"
+            className="flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs text-white transition hover:bg-blue-500"
           >
             <Download size={14} /> CSV
           </button>
@@ -284,7 +282,7 @@ function BurnCalendar({
       </header>
 
       {data.message && (
-        <p className="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-700">
+        <p className="rounded bg-gray-100 px-3 py-2 text-xs text-gray-700">
           {data.coverage
             ? `${data.message} (${viewLabel}).`
             : `No ${view === 'HARMONIZED' ? '' : `${view} `}data is loaded in the database yet.`}
@@ -297,7 +295,7 @@ function BurnCalendar({
         (reliability.small_area || reliability.low_count) && (
           <p
             role="alert"
-            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+            className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900"
           >
             <span className="font-semibold">Larger error in this area: </span>
             {reliability.small_area &&
@@ -312,7 +310,7 @@ function BurnCalendar({
         )}
 
       {latestFull && (
-        <p className="rounded-lg bg-gray-100 px-3 py-2 text-xs">
+        <p className="rounded bg-gray-100 px-3 py-2 text-xs">
           <span className="font-semibold">
             Latest full month, {MONTH_LABELS[latestFull.month - 1]}{' '}
             {latestFull.year}:
@@ -373,7 +371,7 @@ function BurnCalendar({
                         return (
                           <td
                             key={label}
-                            className="h-7 rounded"
+                            className="h-7 rounded-sm"
                             style={NO_DATA_STYLE}
                             title={`${label} ${year.year}: no data loaded`}
                           />
@@ -396,7 +394,7 @@ function BurnCalendar({
                             onBlur={() => setHovered(null)}
                             title={text}
                             aria-label={`${text}. Show on map.`}
-                            className={`h-full w-full rounded tabular-nums transition hover:ring-2 hover:ring-gray-800 ${
+                            className={`relative h-full w-full rounded-sm tabular-nums transition hover:ring-2 hover:ring-gray-800 ${
                               isSelected ? 'ring-2 ring-blue-600' : ''
                             } ${
                               inRange
@@ -406,6 +404,17 @@ function BurnCalendar({
                             style={cellStyle(m)}
                           >
                             {m.count > 0 ? formatCount(m.count) : ''}
+                            {m.source && (
+                              // Source bar as an element, not a box-shadow, so it
+                              // does not hide the hover/selected ring.
+                              <span
+                                aria-hidden
+                                className="absolute inset-x-0 bottom-0 h-[3px]"
+                                style={{
+                                  backgroundColor: SOURCE_STYLE[m.source].color,
+                                }}
+                              />
+                            )}
                           </button>
                         </td>
                       )
