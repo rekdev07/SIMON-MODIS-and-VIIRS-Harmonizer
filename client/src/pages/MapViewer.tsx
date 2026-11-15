@@ -12,30 +12,30 @@ function MapViewer() {
     <div className="min-h-screen grid grid-cols-[300px_1fr] bg-gray-300">
       <SideBar>
         <h1 className="mb-6 text-xl font-bold">SIMON</h1>
-        <p>Paso 1. Elige un lugar</p>
+        <p>Step 1. Choose a place</p>
         <div className="flex flex-col gap-5">
           <TextField
-            label="Coordenadas"
+            label="Coordinates"
             name="nombre"
             value={nombre}
             onChange={setNombre}
-            placeholder="Ej. Latidudad, Longitud"
+            placeholder="E.g. Latitude, Longitude"
             required
           />
 
-          <p>Paso 2. Dibuja el área deseada</p>
+          <p>Step 2. Draw the desired area</p>
 
-          <p>Paso 3. Ingresar el rango de fechas a mostrar</p>
+          <p>Step 3. Enter the date range to display</p>
           <DatePicker
-            label="Inicio"
+            label="Start"
             name="fecha"
             value={fecha}
             onChange={setFecha}
             required
           />
           <DatePicker
-            label="Fin"
-            name="fecha"
+            label=""
+            name="End"
             value={fecha}
             onChange={setFecha}
             required
