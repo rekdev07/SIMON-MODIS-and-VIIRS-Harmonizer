@@ -18,7 +18,7 @@ function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`text-cyan-50 bg-blue-600 py-2 px-4 rounded hover:bg-blue-500 active:bg-blue-400 transition disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-500`}
+      className={`rounded bg-blue-600 px-4 py-2 text-cyan-50 transition hover:bg-blue-500 active:bg-blue-400 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-500`}
     >
       {children}
     </button>

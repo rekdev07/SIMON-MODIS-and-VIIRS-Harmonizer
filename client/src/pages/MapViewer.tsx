@@ -7,7 +7,7 @@ import ViewToggle, {
 import type { DashboardArea } from './Dashboard'
 import TextField from '../components/fields/TextField'
 import DatePicker from '../components/fields/DatePicker'
-import Button from '../components/landing/Buttons'
+import Button from '../components/fields/Button'
 import { useGeolocation } from '../hooks/useGeolocation'
 import { useHotspots } from '../hooks/useHotspots'
 import { useDataset } from '../hooks/useDataset'

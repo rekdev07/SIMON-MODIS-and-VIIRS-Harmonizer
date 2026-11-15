@@ -56,7 +56,8 @@ client/
 │  ├─ index.css              Tailwind import and global styles
 │  ├─ pages/                 one component per screen (MapViewer.tsx, Dashboard.tsx)
 │  └─ components/
-│     ├─ landing/            components of the landing page (Navbar.tsx)
+│     ├─ fields/             form controls of the side panel (Button, TextField, DatePicker)
+│     ├─ Calendar/           burning activity calendar (BurnCalendar, Segmented, LegendSwatch)
 │     ├─ ScreenViewer/       components of the map viewer (Map.tsx, SideBar.tsx, ViewToggle.tsx)
 │     └─ dashboard/          the 25 dashboard charts, ChartCard, EChart wrapper, filters
 ├─ eslint.config.js, .prettierrc.json, .prettierignore
