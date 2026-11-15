@@ -9,7 +9,7 @@ function MapViewer() {
   const [fecha, setFecha] = useState('')
 
   return (
-    <div className="grid min-h-screen grid-cols-[300px_1fr] bg-gray-300">
+    <div className="min-h-screen grid grid-cols-[300px_1fr] bg-gray-300">
       <SideBar>
         <h1 className="mb-6 text-xl font-bold">SIMON</h1>
         <p>Step 1. Choose a place</p>
@@ -25,8 +25,6 @@ function MapViewer() {
 
           <p>Step 2. Draw the desired area</p>
 
-          <Button>Draw rectangle</Button>
-
           <p>Step 3. Enter the date range to display</p>
           <DatePicker
             label="Start"
@@ -36,13 +34,14 @@ function MapViewer() {
             required
           />
           <DatePicker
-            label=""
-            name="End"
+            label="End"
+            name="fecha"
             value={fecha}
             onChange={setFecha}
             required
           />
           <Button>Save</Button>
+
         </div>
       </SideBar>
     </div>
