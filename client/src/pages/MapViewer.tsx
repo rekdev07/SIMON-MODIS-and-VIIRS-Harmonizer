@@ -2,6 +2,8 @@ import { useState } from 'react'
 import SideBar from '../components/ScreenViewer/SideBar'
 import TextField from '../components/fields/TextField'
 import DatePicker from '../components/fields/DatePicker'
+import Button from '../components/landing/Buttons'
+import Select from '../components/landing/Select'
 
 function MapViewer() {
   const [nombre, setNombre] = useState('')
@@ -39,15 +41,8 @@ function MapViewer() {
             onChange={setFecha}
             required
           />
-          <button
-            type="button"
-            onClick={() => {
-              console.log({ nombre, fecha })
-            }}
-            className="rounded-lg bg-emerald-700 px-4 py-2.5 font-medium text-white hover:bg-emerald-800"
-          >
-            Guardar
-          </button>
+          <Button>Save</Button>
+
         </div>
       </SideBar>
     </div>
