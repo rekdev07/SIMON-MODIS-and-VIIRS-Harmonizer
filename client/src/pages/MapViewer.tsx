@@ -3,7 +3,6 @@ import SideBar from '../components/ScreenViewer/SideBar'
 import TextField from '../components/fields/TextField'
 import DatePicker from '../components/fields/DatePicker'
 import Button from '../components/landing/Buttons'
-import Select from '../components/landing/Select'
 
 function MapViewer() {
   const [nombre, setNombre] = useState('')
