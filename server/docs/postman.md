@@ -43,7 +43,8 @@ medians, total = sum of the months), so it passes with any data. **Calendar, har
 checks `harmonized: true`, the `harmonization` block and that every month has a `source`; the
 Errors folder has **Harmonized with instrument** (400, `parameter: instrument`).
 
-The **Stats (dashboard)** folder has one request per `/api/v1/stats/*` endpoint (Durango, 2013),
+The **Stats (dashboard)** folder has one request per `/api/v1/stats/*` endpoint (Durango, 2013;
+`celldays` covers 2011-11 → 2013-12 so it crosses the start of VIIRS),
 an empty-area case and three 400 cases. Its checks only look at the shape of the answer
 (fields, `message`, error `parameter`), so they pass with any data that has detections in
 Durango in 2013. What each endpoint returns: [dashboard-api.md](dashboard-api.md).

@@ -100,3 +100,48 @@ a clear problem **and** the adjusted version lowers the box WAPE by ≥ 3 points
 - Few night detections → the night ratio is the noisiest.
 - Small areas (< 1° × 1°) or months under ~50 detections: the error grows (calendar warning).
 - NRT months (no `type`) may include some industrial or volcano detections.
+
+## Cell-days: MODIS extrapolated to VIIRS
+
+A second, independent harmonization feeds the dashboard's **cell-day panel**
+(`GET /api/v1/stats/celldays`, code in [`harmonizer/celldays.py`](../harmonizer/celldays.py)).
+It goes the other way (MODIS → VIIRS) and uses another unit, so it is **never mixed** with
+the calendar above.
+
+**Unit.** A *cell-day* is one 5 km × 5 km cell with at least one detection on one UTC day.
+Ten detections in the same cell on the same day count once, which makes the metric far less
+sensitive to pixel size than detection counts. VIIRS days are also shown in cell-days, so the
+observed and the extrapolated parts of the series are comparable.
+
+**Grid** (same as the Durango pilot function): anchored at the rectangle's south-west corner,
+`dy = 5 / 111.32` degrees, `dx = dy / cos(mean latitude)`; points on the east or north edge go
+to the last column or row. Checked against the original pandas function on the real data
+(Durango, 2000-11 → 2025-12): identical cell-days for Terra, Aqua and SNPP on every day.
+
+**Which satellite each day.** VIIRS SNPP when SNPP has at least one detection **anywhere in
+the database** that day; otherwise Aqua, otherwise Terra. "Anywhere" matters: a quiet day in
+a small rectangle is a real zero, but a day without any SNPP detection in the whole country
+is a hole in the VIIRS record (before 2012-01-20, or an outage). Aqua comes first because it
+crosses at ~13:30 local time, like SNPP.
+
+| Satellite | Factor to SNPP cell-days |
+|---|---|
+| SNPP | 1 |
+| Aqua | 18376 / 2391 ≈ 7.685 |
+| Terra | 18376 / 1944 ≈ 9.453 |
+
+The factors are **fixed constants from the Durango pilot calibration** (rectangle
+22.345°N–26.845°N, 107.210°W–102.473°W, 5 km grid), not fitted by `harmonize.py`. They are
+applied to any rectangle, but outside the pilot area the API returns a `warning` and the UI
+shows it. For reference, the same ratio measured on our Durango data: SNPP/Aqua 7.3 in 2013,
+8.2 in 2020, 6.1 over 2012–2025; SNPP/Terra 9.3, 11.3 and 7.9.
+
+**Periods.** The response names the *extrapolated* and the *VIIRS* periods (`phases`); short
+VIIRS outages filled with MODIS stay inside the VIIRS period and are counted (`days_aqua`).
+For the Durango rectangle: extrapolated 2000-11-01 → 2012-01-19 (596 Terra days, then Aqua),
+VIIRS 2012-01-20 → 2025-12-31 (38 days filled with Aqua).
+
+**Limits.** Cell-days are an *indirect* metric of the average fire activity level: not a
+count of fires, burned area or intensity. Dashboard filters are ignored (the factors were
+calibrated on every detection). The extrapolated values are estimates, and only the pilot
+area has a calibration.

@@ -2042,6 +2042,75 @@
           "response": []
         },
         {
+          "name": "Cell-day harmonization (charts 26-28)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"data has the documented keys\", () => pm.expect(b.data).to.have.all.keys([\"series\", \"months\", \"profile\", \"phases\", \"periods\", \"summary\"]));",
+                  "pm.test(\"Profile has 12 months\", () => pm.expect(b.data.profile).to.have.length(12));",
+                  "pm.test(\"Series rows have a source\", () => b.data.series.forEach(r => pm.expect([\"viirs\", \"extrapolated\", \"mixed\", \"none\"]).to.include(r.source)));",
+                  "pm.test(\"Filters are not applied\", () => pm.expect(b.metadata.filters_applied).to.eql(false));",
+                  "pm.test(\"Has the disclaimer\", () => pm.expect(b.metadata.disclaimer).to.be.a(\"string\").that.is.not.empty);",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "VIIRS SNPP-equivalent cell-days (5 km cells), MODIS extrapolated where VIIRS has no data. Durango, 2011-11 to 2013-12 (crosses the VIIRS start).",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/celldays?lat1=22.345&lon1=-107.210278&lat2=26.845&lon2=-102.472778&start_date=2011-11-01&end_date=2013-12-31&freq=month",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "celldays"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "22.345"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.210278"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.845"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.472778"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2011-11-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                },
+                {
+                  "key": "freq",
+                  "value": "month"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Stats: empty area (Spain)",
           "event": [
             {

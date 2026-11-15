@@ -62,7 +62,7 @@ server/
 │  └─ routes/
 │     ├─ hotspots.py         GET /api/v1/hotspots
 │     ├─ calendar.py         GET /api/v1/calendar
-│     ├─ stats.py            GET /api/v1/stats/* (13 dashboard endpoints)
+│     ├─ stats.py            GET /api/v1/stats/* (14 dashboard endpoints)
 │     ├─ meta.py             GET /api/v1/dataset, GET /health
 │     └─ model.py            GET /api/v1/model/schema|metrics, POST /api/v1/model/predict
 ├─ model_artifacts/           native XGBoost confidence model + evaluation report
@@ -78,6 +78,7 @@ server/
 ├─ .env.example, requirements*.txt, pyproject.toml, run.py, README.md
 └─ harmonizer/
    ├─ method.py              ratios (ratio of sums), MODIS_eq, Terra factor, series, CV, metrics
+   ├─ celldays.py            5 km cell-days, MODIS→VIIRS extrapolation (Durango pilot factors)
    ├─ data.py                DuckDB GROUP BY month (and 1° box) per satellite × day/night
    ├─ params.py              fit / save / load table harmonization_params
    ├─ validation.py          report: CV + reliability tests 1-4 + scatter SVG
@@ -204,9 +205,14 @@ MODIS Terra+Aqua units (vegetation only), plus per month `source` (`terra_scaled
 
 ### `GET /api/v1/stats/*` (dashboard)
 
-Contract: `docs/dashboard-api.md`. 13 endpoints: `summary`, `timeseries`, `distribution`,
+Contract: `docs/dashboard-api.md`. 14 endpoints: `summary`, `timeseries`, `distribution`,
 `scatter`, `calendar`, `by-hour`, `by-category`, `by-scan`, `top-events`, `points`, `grid`,
-`sensor-comparison`, `monthly`.
+`sensor-comparison`, `monthly`, `celldays`.
+
+- `celldays` (`harmonizer/celldays.py`): VIIRS SNPP-equivalent cell-days (5 km cells with ≥ 1
+  detection per UTC day). Days without SNPP data anywhere in the database are extrapolated from
+  Aqua (else Terra) with the **fixed Durango pilot factors** (the one exception to "ratios are
+  always fitted"); `warning` outside the pilot area; dashboard filters ignored.
 
 - Same area params and rules as `/api/v1/hotspots` (`lat1..lon2`, `start_date`, `end_date`,
   `confidence_min`, `daynight`, `instrument`) plus `satellite` and `fire_type`

@@ -121,7 +121,7 @@ curl "http://localhost:5000/api/v1/stats/timeseries?freq=week&lat1=22.3&lon1=-10
 curl "http://localhost:5000/api/v1/stats/distribution?field=frp&bins=20&log=true&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31"
 ```
 
-All 13 `/api/v1/stats/*` endpoints (one per group of dashboard charts) are described in
+All 14 `/api/v1/stats/*` endpoints (one per group of dashboard charts) are described in
 [docs/dashboard-api.md](docs/dashboard-api.md).
 
 ## More documentation

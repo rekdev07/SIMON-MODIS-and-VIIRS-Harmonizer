@@ -156,6 +156,7 @@ AREA="lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-04-01&end_date
 | [`/grid`](#get-apiv1statsgrid) | 22 |
 | [`/sensor-comparison`](#get-apiv1statssensor-comparison) | 23, 24 |
 | [`/monthly`](#get-apiv1statsmonthly) | 25 |
+| [`/celldays`](#get-apiv1statscelldays) | 26, 27, 28 (cell-day harmonization panel) |
 
 ---
 
@@ -650,6 +651,95 @@ curl "http://localhost:5000/api/v1/stats/monthly?lat1=22.3&lon1=-107.2&lat2=26.8
     "..."
   ],
   "metadata": {"...": "...", "units": {}}
+}
+```
+
+---
+
+### `GET /api/v1/stats/celldays`
+
+**Charts: 26-28 (cell-day harmonization panel).** One series in **VIIRS SNPP-equivalent
+cell-days** that runs over the whole selection: days with VIIRS SNPP data use SNPP, days
+without it are **extrapolated from MODIS** (Aqua, or Terra when Aqua is missing). Method,
+factors and limits: [harmonization.md § Cell-days](harmonization.md#cell-days-modis-extrapolated-to-viirs).
+
+```
+cell-day = one 5 km × 5 km cell with ≥ 1 detection on one UTC day
+            ┌───┬───┐
+day 1       │ ●●│   │   3 detections in 2 cells → 2 cell-days
+            │   │ ● │
+            └───┴───┘
+value of a day = SNPP cell-days               if SNPP has data that day (anywhere in the database)
+               = Aqua cell-days  × 7.685      otherwise, if Aqua has data
+               = Terra cell-days × 9.453      otherwise, if Terra has data
+               = null                         no satellite has data
+```
+
+Params: common area and dates, plus `freq` = `day` / `week` / `month` (default) / `year`
+for `series`. Weeks are 7-day blocks counted from `start_date`. **The filters
+(`confidence_min`, `daynight`, `instrument`, `satellite`, `fire_type`) are ignored**: the
+factors were calibrated on every detection (`metadata.filters_applied` is `false`).
+
+`data` is an object:
+
+| Key | Content |
+|---|---|
+| `series` | one row per `freq` period (same fields as `months`) |
+| `months` | one row per calendar month (for the year × month calendar) |
+| `profile` | 12 rows: `month`, `mean`, `min`, `max`, `years` over **full** months with data |
+| `phases` | periods to name in the UI: `category` (`extrapolated` / `viirs` / `none`), `start`, `end`, `days`, `days_viirs`, `days_aqua`, `days_terra`, `days_missing`. Gaps shorter than 30 days are folded into the phase around them (their days stay counted). |
+| `periods` | exact runs of days with the same `source` (`viirs`, `aqua`, `terra`, `none`), `start`, `end`, `days` |
+| `summary` | totals over the selection (same fields as a `months` row, without dates) |
+
+Fields of a `series` / `months` row:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `start`, `end` | date | period inside the selection |
+| `partial` | bool | the selection cuts the period |
+| `value` | number \| null | harmonized cell-days; null when no day had data |
+| `viirs` | number | part observed by VIIRS SNPP |
+| `extrapolated` | number | part extrapolated from MODIS |
+| `source` | string | `viirs`, `extrapolated`, `mixed` or `none` |
+| `days_viirs`, `days_aqua`, `days_terra`, `days_missing` | integer | days of each source |
+
+Extra `metadata`: `freq`, `filters_applied` (false), `cell_km` (5), `factors`, `priority`,
+`pilot_bounds`, `pilot_area` (rectangle within 0.01° of the pilot one), `warning` (text, or
+null in the pilot area) and `disclaimer` (text to show with the charts).
+
+```bash
+curl "http://localhost:5000/api/v1/stats/celldays?lat1=22.345&lon1=-107.210278&lat2=26.845&lon2=-102.472778&start_date=2011-11-01&end_date=2012-04-30"
+```
+
+```json
+{
+  "data": {
+    "series": [
+      "...",
+      {"start": "2011-12-01", "end": "2011-12-31", "partial": false, "value": 245.94, "viirs": 0.0,
+       "extrapolated": 245.94, "source": "extrapolated", "days_viirs": 0, "days_aqua": 31, "days_terra": 0, "days_missing": 0},
+      {"start": "2012-01-01", "end": "2012-01-31", "partial": false, "value": 390.94, "viirs": 145.0,
+       "extrapolated": 245.94, "source": "mixed", "days_viirs": 12, "days_aqua": 19, "days_terra": 0, "days_missing": 0},
+      "..."
+    ],
+    "months": ["..."],
+    "profile": [{"month": 1, "mean": 390.94, "min": 390.94, "max": 390.94, "years": 1}, "..."],
+    "phases": [
+      {"category": "extrapolated", "start": "2011-11-01", "end": "2012-01-19", "days": 80, "days_viirs": 0, "days_aqua": 80, "days_terra": 0, "days_missing": 0},
+      {"category": "viirs", "start": "2012-01-20", "end": "2012-04-30", "days": 102, "days_viirs": 101, "days_aqua": 1, "days_terra": 0, "days_missing": 0}
+    ],
+    "periods": ["..."],
+    "summary": {"value": 3989.95, "viirs": 3329.0, "extrapolated": 660.95, "source": "mixed", "...": "..."}
+  },
+  "metadata": {
+    "...": "...",
+    "freq": "month", "filters_applied": false, "cell_km": 5.0,
+    "factors": {"Aqua": 7.685487, "Terra": 9.452675, "SNPP": 1.0},
+    "priority": ["SNPP", "Aqua", "Terra"],
+    "pilot_bounds": {"west": -107.210278, "east": -102.472778, "south": 22.345, "north": 26.845},
+    "pilot_area": true, "warning": null,
+    "disclaimer": "Cell-days are an indirect metric of the average fire activity level in the region. ..."
+  }
 }
 ```
 
