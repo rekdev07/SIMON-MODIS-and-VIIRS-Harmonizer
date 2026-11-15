@@ -243,12 +243,11 @@ Never commit `data/` (raw JSON, `.duckdb`).
 
 ## 14. Git workflow (agents)
 
-Agents commit their own work. Publishing (push + pull request) always waits for the user's OK.
+All work goes **directly on `main`**: no feature branches and no pull requests.
+Agents commit their own work locally; pushing always waits for the user's OK.
 
-1. **Branch first.** Before the first change of a task, create a branch from the current
-   branch (never commit straight to `main`): `git switch -c <type>/<short-topic>`, with
-   `<type>` one of `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
-   (e.g. `docs/postman-guide`, `feat/calendar-endpoint`). If a branch for that task already exists, reuse it.
+1. **Work on `main`.** Before starting, `git switch main` and `git pull --ff-only origin main`
+   so you build on the latest work from the team.
 2. **Commit automatically and locally**, without asking, once a logical step is done and
    `pytest` passes:
    - Small commits, one logical change each (e.g. code, tests and docs can be separate commits).
@@ -258,14 +257,12 @@ Agents commit their own work. Publishing (push + pull request) always waits for 
      `Co-Authored-By: Claude <noreply@anthropic.com>` (use the trailer your tool provides).
      Keep the repository's configured git user as author; do not change `git config`.
    - Stage files explicitly (`git add <paths>`), check `git status` first, and never commit
-     `data/`, `.env`, `.venv/` or other ignored or local files.
-3. **Do not push yet.** When the task is finished, tell the user the branch name, list the
-   commits (`git log --oneline <base>..HEAD`) and ask them to review and confirm.
-4. **After the user confirms it is good**, publish:
-   - `git push -u origin <branch>`
-   - Open a pull request against `main`: `gh pr create --base main --fill` (or with a
-     title and a body summarizing the changes and how they were tested). If `gh` is not
-     installed, push and give the user the link
-     `https://github.com/rekdev07/SIMON-MODIS-and-VIIRS-Harmonizer/compare/main...<branch>?expand=1`.
-   - Reply with the PR link.
-5. Never force-push, rewrite published history, merge PRs or delete branches unless the user asks.
+     `data/`, `.env`, `.venv/` or other ignored or local files. Leave other people's
+     uncommitted changes (e.g. in `client/`) alone.
+3. **Do not push yet.** When the task is finished, list the new commits
+   (`git log --oneline origin/main..HEAD`) and ask the user to review and confirm.
+4. **After the user confirms it is good**, push to `main`:
+   - `git pull --rebase origin main` if `origin/main` moved meanwhile (teammates push to it too),
+     run `pytest` again, then `git push origin main`.
+   - Reply with the pushed commits.
+5. Never force-push or rewrite published history unless the user asks.

@@ -10,5 +10,5 @@
 - LAN by default: `API_HOST=0.0.0.0`, CORS also allows private-network origins (`CORS_ALLOW_LAN`).
 - No results → HTTP 200 + `"message": "No data found in the selected area"` (only then).
 - Run `pytest` from `server/` after every change and keep `docs/` in sync.
-- Git: work on a new branch, commit locally on your own (small commits, co-author trailer);
-  push and open the PR only after the user confirms (AGENTS.md §14).
+- Git: work directly on `main` (no branches, no PRs), commit locally on your own (small commits,
+  co-author trailer); push to `main` only after the user confirms (AGENTS.md §14).
