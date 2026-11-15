@@ -61,6 +61,7 @@ client/
 │     ├─ Calendar/           burning activity calendar (BurnCalendar, Segmented, LegendSwatch)
 │     ├─ ScreenViewer/       components of the map viewer (Map.tsx, SideBar.tsx, ViewToggle.tsx)
 │     ├─ dashboard/          the 25 dashboard charts, ChartCard, EChart wrapper, filters
+│     ├─ harmonization/      cell-day harmonization section (charts 26-28, periods, disclaimer)
 │     └─ model/              confidence input form and evaluation-report visuals
 ├─ eslint.config.js, .prettierrc.json, .prettierignore
 ├─ vite.config.ts, tsconfig*.json
@@ -169,6 +170,13 @@ plus its own filter row. Types in `src/types/stats.ts`, requests in `src/api/sta
 one `useStats(endpoint, query, options)` call per chart (re-fetches when they change,
 aborts stale requests). Never add MODIS and VIIRS counts in the UI: one series per sensor.
 The dashboard is lazy-loaded so ECharts is not in the map's bundle.
+The **Cell-day harmonization** section (button on the main dashboard, `components/harmonization/`)
+reads `/stats/celldays`: one series in VIIRS SNPP-equivalent cell-days where the API already
+extrapolated MODIS on the days without VIIRS. It is the one place where both sensors share a
+series (same unit, converted by the API); the UI must keep the two parts distinguishable
+(orange = observed by VIIRS, blue = extrapolated from MODIS, markers in chart 28), always show
+the API's `disclaimer` and its `warning` outside the Durango pilot area, and hide the filter row
+(the API ignores filters there).
 Every `ChartCard` with a chart has a **PNG** button that saves the whole card (title, subtitle,
 chart); ECharts renders at ≥ 2× so the image is sharp.
 

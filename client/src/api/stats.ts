@@ -16,6 +16,7 @@ export type StatsEndpoint =
   | 'grid'
   | 'sensor-comparison'
   | 'monthly'
+  | 'celldays'
 
 /**
  * Builds the query parameters shared by every stats endpoint.

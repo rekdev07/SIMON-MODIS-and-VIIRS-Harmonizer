@@ -188,3 +188,94 @@ export type MonthlyRow = {
   detections: number
   years_with_data: number
 }
+
+/** Period length of the cell-day series (`/stats/celldays?freq=`). */
+export type CellDaysFreq = 'day' | 'week' | 'month' | 'year'
+
+/**
+ * Where a cell-day period comes from: observed by VIIRS SNPP, extrapolated
+ * from MODIS (Aqua, or Terra without Aqua), both, or no satellite data at all.
+ */
+export type CellDaysSource = 'viirs' | 'extrapolated' | 'mixed' | 'none'
+
+/**
+ * One period of `/stats/celldays` (charts 26 and 28). Values are VIIRS
+ * SNPP-equivalent cell-days: 5 km cells with at least one detection per UTC
+ * day, MODIS days multiplied by the Durango pilot factors.
+ */
+export type CellDaysPeriod = {
+  /** First day of the period inside the selection, `YYYY-MM-DD`. */
+  start: string
+  /** Last day of the period inside the selection. */
+  end: string
+  /** The selected dates cut the period. */
+  partial: boolean
+  /** Total cell-days, or null when no day had any satellite data. */
+  value: number | null
+  /** Part of `value` observed by VIIRS SNPP. */
+  viirs: number
+  /** Part of `value` extrapolated from MODIS. */
+  extrapolated: number
+  source: CellDaysSource
+  days_viirs: number
+  days_aqua: number
+  days_terra: number
+  days_missing: number
+}
+
+/** Average of one calendar month over the selected years (chart 27). */
+export type CellDaysProfileRow = {
+  /** 1 = January … 12 = December. */
+  month: number
+  mean: number | null
+  min: number | null
+  max: number | null
+  /** Full months with data that contributed. */
+  years: number
+}
+
+/**
+ * A named stretch of the selection: extrapolated from MODIS, observed by
+ * VIIRS, or before any data. Short gaps are folded into the phase around them
+ * by the API; their days stay counted in `days_aqua` / `days_terra`.
+ */
+export type CellDaysPhase = {
+  category: 'viirs' | 'extrapolated' | 'none'
+  start: string
+  end: string
+  days: number
+  days_viirs: number
+  days_aqua: number
+  days_terra: number
+  days_missing: number
+}
+
+/** `data` of `/stats/celldays`. */
+export type CellDaysData = {
+  /** One row per `freq` period. */
+  series: CellDaysPeriod[]
+  /** One row per calendar month (for the calendar). */
+  months: CellDaysPeriod[]
+  /** Twelve rows, January first. */
+  profile: CellDaysProfileRow[]
+  phases: CellDaysPhase[]
+  /** Totals over the whole selection. */
+  summary: Omit<CellDaysPeriod, 'start' | 'end' | 'partial'>
+}
+
+/** Endpoint-specific `metadata` of `/stats/celldays`. */
+export type CellDaysMetadata = {
+  freq: CellDaysFreq
+  /** Always false: the factors were calibrated on every detection. */
+  filters_applied: false
+  cell_km: number
+  /** Multiplier to SNPP cell-days per satellite (`SNPP` = 1). */
+  factors: Record<'SNPP' | 'Aqua' | 'Terra', number>
+  pilot_bounds: { west: number; east: number; south: number; north: number }
+  /** The rectangle is the Durango pilot one (within 0.01°). */
+  pilot_area: boolean
+  /** Shown when the area is not the pilot one; null otherwise. */
+  warning: string | null
+  /** Text shown with every cell-day chart. */
+  disclaimer: string
+}

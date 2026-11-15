@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, ChartNoAxesCombined } from 'lucide-react'
+import { ArrowLeft, ChartNoAxesCombined, Layers } from 'lucide-react'
 import { type Bounds } from '../types/hotspots'
 import { type StatsFilters, type StatsQuery } from '../types/stats'
 import { formatLatLng } from '../utils/coordinates'
@@ -17,6 +17,7 @@ import PointsMap from '../components/dashboard/PointsMap'
 import GridMap from '../components/dashboard/GridMap'
 import SensorComparisonCharts from '../components/dashboard/SensorComparisonCharts'
 import MonthlyChart from '../components/dashboard/MonthlyChart'
+import CellDaysPanel from '../components/harmonization/CellDaysPanel'
 
 /** Area and dates applied with the side panel's Save button. */
 export type DashboardArea = {
@@ -34,16 +35,26 @@ type DashboardProps = {
 }
 
 /** Section of the dashboard on screen. */
-type Section = 'main' | 'advanced'
+type Section = 'main' | 'advanced' | 'harmonization'
+
+/** Heading of each section. */
+const SECTION_TITLES: Record<Section, string> = {
+  main: 'Dashboard',
+  advanced: 'Advanced data',
+  harmonization: 'Cell-day harmonization',
+}
 
 /**
  * Dashboard view: the charts for the area and dates saved in the side panel,
  * filtered by the bar at the top.
  *
- * It has two sections. The main one keeps the overview charts and a button
- * that opens "Advanced data", which holds the detailed distributions,
- * scatter plots, breakdowns and sensor comparisons. Only the section on
- * screen is mounted, so the advanced charts are not requested until opened.
+ * It has three sections. The main one keeps the overview charts and two
+ * buttons: "Advanced data" (detailed distributions, scatter plots, breakdowns
+ * and sensor comparisons) and "Cell-day harmonization" (one series in VIIRS
+ * SNPP-equivalent cell-days, extrapolated from MODIS where VIIRS has no data,
+ * charts 26-28). Only the section on screen is mounted, so the other charts
+ * are not requested until opened. The filter row is hidden in the
+ * harmonization section because the API ignores filters there.
  *
  * Every chart loads its own `/api/v1/stats/*` endpoint through `useStats`, so
  * each shows its own loading, empty and error state and re-fetches only when
@@ -62,7 +73,7 @@ function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
       <header className="mb-4 flex flex-col gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            {section === 'advanced' && (
+            {section !== 'main' && (
               <button
                 type="button"
                 onClick={() => setSection('main')}
@@ -72,19 +83,21 @@ function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
               </button>
             )}
             <h2 className="text-lg font-bold text-gray-900">
-              {section === 'main' ? 'Dashboard' : 'Advanced data'}
+              {SECTION_TITLES[section]}
             </h2>
           </div>
           {area ? (
             <p className="text-xs text-gray-600">
               Area SW {formatLatLng(area.bounds.southWest, 2)} · NE{' '}
               {formatLatLng(area.bounds.northEast, 2)} · {area.startDate} to{' '}
-              {area.endDate} (UTC, both days included). MODIS and VIIRS are
-              always shown separately.
+              {area.endDate} (UTC, both days included).{' '}
+              {section === 'harmonization'
+                ? 'One series in VIIRS SNPP-equivalent cell-days; MODIS fills the days without VIIRS.'
+                : 'MODIS and VIIRS are always shown separately.'}
             </p>
           ) : null}
         </div>
-        {area && (
+        {area && section !== 'harmonization' && (
           <DashboardFilters filters={filters} onChange={onFiltersChange} />
         )}
       </header>
@@ -104,12 +117,21 @@ function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
           <GridMap query={query} />
           <button
             type="button"
+            onClick={() => setSection('harmonization')}
+            className="flex items-center justify-center gap-2 rounded border border-blue-600 bg-white p-6 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+          >
+            <Layers size={18} /> Open cell-day harmonization
+          </button>
+          <button
+            type="button"
             onClick={() => setSection('advanced')}
-            className="flex items-center justify-center gap-2 rounded border border-blue-600 bg-white p-6 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 lg:col-span-2"
+            className="flex items-center justify-center gap-2 rounded border border-blue-600 bg-white p-6 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
           >
             <ChartNoAxesCombined size={18} /> Open advanced data
           </button>
         </div>
+      ) : query && section === 'harmonization' ? (
+        <CellDaysPanel query={query} />
       ) : query ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <DistributionChart
