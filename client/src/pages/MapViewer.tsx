@@ -7,6 +7,8 @@ import Button from '../components/landing/Buttons'
 import { useGeolocation } from '../hooks/useGeolocation'
 import { useHotspots } from '../hooks/useHotspots'
 import { useDataset } from '../hooks/useDataset'
+import { useCalendar } from '../hooks/useCalendar'
+import BurnCalendar from '../components/Calendar/BurnCalendar'
 import { type Bounds, type LatLngPoint } from '../types/hotspots'
 import { formatLatLng, parseLatLng, todayUtc } from '../utils/coordinates'
 
@@ -23,6 +25,7 @@ function MapViewer() {
   const geo = useGeolocation()
   const dataset = useDataset()
   const hotspots = useHotspots()
+  const calendar = useCalendar()
 
   // Null = the user has not typed/applied anything, so follow the geolocation.
   const [coordsText, setCoordsText] = useState<string | null>(null)
@@ -34,6 +37,13 @@ function MapViewer() {
   const [drawMode, setDrawMode] = useState(false)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  // Area the calendar was loaded for; clicks on the calendar search this area
+  // even if the user has started drawing a new one.
+  const [calendarBounds, setCalendarBounds] = useState<Bounds | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState<{
+    year: number
+    month: number
+  } | null>(null)
 
   const center = manualCenter ?? geo.position
   const coordsValue = coordsText ?? formatLatLng(geo.position)
@@ -76,7 +86,33 @@ function MapViewer() {
     e.preventDefault()
     if (!canSave || !bounds) return
     hotspots.search({ bounds, startDate, endDate })
+    calendar.load(bounds)
+    setCalendarBounds(bounds)
+    setSelectedMonth(null)
   }
+
+  /**
+   * Shows one calendar month on the map: sets the date pickers to that month
+   * (first to last day, clamped to the loaded data so partial months stay
+   * valid) and searches the calendar's area.
+   */
+  const selectMonth = (year: number, month: number) => {
+    if (!calendarBounds) return
+    const mm = String(month).padStart(2, '0')
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+    const first = `${year}-${mm}-01`
+    const last = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`
+    // ISO dates compare correctly as strings.
+    const start = first < minDate ? minDate : first
+    const end = last > maxDate ? maxDate : last
+    setStartDate(start)
+    setEndDate(end)
+    setSelectedMonth({ year, month })
+    hotspots.search({ bounds: calendarBounds, startDate: start, endDate: end })
+  }
+
+  const showCalendarPanel =
+    calendar.loading || calendar.error !== null || calendar.data !== null
 
   const data = hotspots.data
 
@@ -98,12 +134,8 @@ function MapViewer() {
             <p className="-mt-3 text-xs text-red-600">{coordsError}</p>
           )}
           <div className="flex gap-2">
-            <Button onClick={goToCoords}>
-              Go
-            </Button>
-            <Button onClick={useMyLocation}>
-              Use my location
-            </Button>
+            <Button onClick={goToCoords}>Go</Button>
+            <Button onClick={useMyLocation}>Use my location</Button>
           </div>
           <p className="-mt-3 text-xs text-gray-500">
             {GEO_STATUS_TEXT[geo.status]}
@@ -128,10 +160,7 @@ function MapViewer() {
             <Button onClick={() => setDrawMode(!drawMode)}>
               {drawMode ? 'Cancel' : bounds ? 'Redraw area' : 'Draw area'}
             </Button>
-            <Button
-              onClick={() => setBounds(null)}
-              disabled={!bounds}
-            >
+            <Button onClick={() => setBounds(null)} disabled={!bounds}>
               Clear
             </Button>
           </div>
@@ -185,16 +214,37 @@ function MapViewer() {
         </form>
       </SideBar>
 
-      <HotspotMap
-        center={center}
-        flyRequestId={flyRequestId}
-        bounds={bounds}
-        onBoundsChange={setBounds}
-        drawMode={drawMode}
-        onDrawModeChange={setDrawMode}
-        onLocate={useMyLocation}
-        hotspots={data?.features ?? []}
-      />
+      <div className="flex h-screen min-w-0 flex-col">
+        <div className="min-h-0 flex-1">
+          <HotspotMap
+            center={center}
+            flyRequestId={flyRequestId}
+            bounds={bounds}
+            onBoundsChange={setBounds}
+            drawMode={drawMode}
+            onDrawModeChange={setDrawMode}
+            onLocate={useMyLocation}
+            hotspots={data?.features ?? []}
+          />
+        </div>
+        {showCalendarPanel && (
+          <div className="max-h-[50vh] shrink-0 overflow-y-auto border-t border-gray-300 bg-gray-50 p-4">
+            {calendar.loading && !calendar.data && (
+              <p className="text-sm text-gray-600">Loading calendar…</p>
+            )}
+            {calendar.error && (
+              <p className="text-sm text-red-600">{calendar.error}</p>
+            )}
+            {calendar.data && (
+              <BurnCalendar
+                data={calendar.data}
+                selected={selectedMonth}
+                onSelectMonth={selectMonth}
+              />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

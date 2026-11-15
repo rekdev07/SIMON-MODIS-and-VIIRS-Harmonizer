@@ -129,6 +129,17 @@ and this section.
 - `truncated: true` means there are more hotspots than `limit`: tell the user and offer to
   narrow the area/dates or page with `offset`.
 
+### `GET /api/v1/calendar`
+
+- Params: `lat1,lon1,lat2,lon2` (+ the same optional filters as `/hotspots`), **no dates**.
+- Returns hotspot counts per month for every loaded month: `months[]` (`year`, `month`, `count`,
+  `modis`, `viirs`, `partial`), `years[]`, `monthly_median` (12 values, index 0 = January, null when
+  no full month), `coverage`, `harmonized` (false for now), `total`; `message` only when `total` is 0.
+- A month **missing** from `months` = no data loaded (draw hatched); `count: 0` = observed, no fires.
+  `partial` months are left out of medians and anomalies.
+- Drawn by `components/Calendar/BurnCalendar.tsx` (year × month heatmap, YlOrRd counts / RdBu
+  anomaly vs median, CSV export); clicking a month searches that month's hotspots on the map.
+
 ### Other endpoints
 
 - `GET /api/v1/dataset`: total records, min/max `acq_date`, count per instrument, bbox of all

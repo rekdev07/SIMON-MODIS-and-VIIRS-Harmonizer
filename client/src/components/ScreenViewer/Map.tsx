@@ -6,6 +6,7 @@ import {
   type LatLngPoint,
 } from '../../types/hotspots'
 import MapFlyTo from './MapFlyTo'
+import MapResizeWatcher from './MapResizeWatcher'
 import RectangleDrawer from './RectangleDrawer'
 import HotspotLayer from './HotspotLayer'
 import FrpLegend from './FrpLegend'
@@ -56,6 +57,7 @@ function Map({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <MapResizeWatcher />
         <MapFlyTo target={center} requestId={flyRequestId} />
         <HotspotLayer features={hotspots} />
         <RectangleDrawer
