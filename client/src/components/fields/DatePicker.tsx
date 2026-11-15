@@ -36,7 +36,7 @@ function DatePicker({
         disabled={disabled}
         min={min}
         max={max}
-        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 transition outline-none focus:border-blue-600 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100"
+        className="w-full rounded border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 transition outline-none focus:border-blue-600 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100"
       />
     </div>
   )
