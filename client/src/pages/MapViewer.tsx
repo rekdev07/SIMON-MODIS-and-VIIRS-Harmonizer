@@ -19,19 +19,6 @@ const GEO_STATUS_TEXT = {
   fallback: 'Location unavailable, showing Durango center.',
 } as const
 
-/**
- * Map viewer page: the sidebar form (place → area → dates) and the map.
- *
- * Flow:
- * 1. Place: starts on the browser location, or Durango's center if it is
- *    unavailable. The user can type `lat, lon` and press Go.
- * 2. Area: the user draws a rectangle; its south-west / north-east corners
- *    are kept in `bounds`.
- * 3. Dates: inclusive UTC days, limited to what the loaded dataset covers.
- *
- * Save stays disabled until every input is filled and valid, then it fetches
- * the hotspots, which the map draws colored by FRP.
- */
 function MapViewer() {
   const geo = useGeolocation()
   const dataset = useDataset()
@@ -111,10 +98,10 @@ function MapViewer() {
             <p className="-mt-3 text-xs text-red-600">{coordsError}</p>
           )}
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={goToCoords}>
+            <Button onClick={goToCoords}>
               Go
             </Button>
-            <Button variant="secondary" onClick={useMyLocation}>
+            <Button onClick={useMyLocation}>
               Use my location
             </Button>
           </div>
@@ -138,11 +125,10 @@ function MapViewer() {
             </p>
           )}
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setDrawMode(!drawMode)}>
+            <Button onClick={() => setDrawMode(!drawMode)}>
               {drawMode ? 'Cancel' : bounds ? 'Redraw area' : 'Draw area'}
             </Button>
             <Button
-              variant="secondary"
               onClick={() => setBounds(null)}
               disabled={!bounds}
             >
