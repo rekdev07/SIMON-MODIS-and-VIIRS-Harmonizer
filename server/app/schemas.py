@@ -73,13 +73,14 @@ def confidence_categories_at_least(minimum: str) -> list[str]:
     return list(CONFIDENCE_LEVELS[CONFIDENCE_LEVELS.index(minimum):])
 
 
-class HotspotQueryParams(BaseModel):
-    """Raw query parameters of ``GET /api/v1/hotspots``, validated field by field.
+class AreaQueryParams(BaseModel):
+    """Query parameters shared by every area endpoint (hotspots and stats).
 
-    Strings coming from the URL are coerced by Pydantic (``"20.5"`` → ``20.5``,
-    ``"true"`` → ``True``). Enum-like values are case-insensitive
+    Holds the rectangle corners, the inclusive UTC date range and the common
+    filters, so ``/api/v1/hotspots`` and ``/api/v1/stats/*`` accept exactly the
+    same names and rules. Strings coming from the URL are coerced by Pydantic
+    (``"20.5"`` → ``20.5``). Enum-like values are case-insensitive
     (``instrument=viirs`` works). Unknown parameters are ignored.
-    The maximum ``limit`` comes from the validation context so it stays configurable.
     """
 
     model_config = ConfigDict(extra="ignore")
@@ -93,10 +94,6 @@ class HotspotQueryParams(BaseModel):
     confidence_min: Confidence = "low"
     daynight: DayNight | None = None
     instrument: Instrument | None = None
-    vegetation_only: bool = False
-    limit: int | None = None
-    offset: int = Field(default=0, ge=0)
-    format: OutputFormat = "geojson"
 
     @field_validator("start_date", "end_date", mode="before")
     @classmethod
@@ -124,7 +121,7 @@ class HotspotQueryParams(BaseModel):
             raise ValueError(f"must be between {EARLIEST_DATE.isoformat()} and {today.isoformat()} (UTC)")
         return parsed
 
-    @field_validator("confidence_min", "format", mode="before")
+    @field_validator("confidence_min", mode="before")
     @classmethod
     def _lowercase(cls, value: Any) -> Any:
         """Lower-case enum-like strings so ``HIGH`` and ``high`` are equivalent."""
@@ -138,6 +135,25 @@ class HotspotQueryParams(BaseModel):
             value = value.strip().upper()
             return value or None
         return value
+
+
+class HotspotQueryParams(AreaQueryParams):
+    """Raw query parameters of ``GET /api/v1/hotspots``, validated field by field.
+
+    Adds paging and output format to :class:`AreaQueryParams`. The maximum
+    ``limit`` comes from the validation context so it stays configurable.
+    """
+
+    vegetation_only: bool = False
+    limit: int | None = None
+    offset: int = Field(default=0, ge=0)
+    format: OutputFormat = "geojson"
+
+    @field_validator("format", mode="before")
+    @classmethod
+    def _lowercase_format(cls, value: Any) -> Any:
+        """Lower-case the format so ``GEOJSON`` and ``geojson`` are equivalent."""
+        return value.strip().lower() if isinstance(value, str) else value
 
     @field_validator("limit")
     @classmethod
@@ -223,7 +239,7 @@ class DatasetSummary(BaseModel):
     bbox: list[float] | None
 
 
-def _first_error(error: ValidationError) -> InvalidParameterError:
+def first_error(error: ValidationError) -> InvalidParameterError:
     """Convert the first Pydantic error into an :class:`InvalidParameterError`.
 
     Only the first error is reported to keep messages short and predictable.
@@ -240,6 +256,31 @@ def _first_error(error: ValidationError) -> InvalidParameterError:
         return InvalidParameterError(parameter, f"Missing required parameter '{parameter}'")
     reason = str(detail["msg"]).removeprefix("Value error, ")
     return InvalidParameterError(parameter, f"Invalid value for '{parameter}': {reason}")
+
+
+def validate_area(params: AreaQueryParams) -> BoundingBox:
+    """Run the cross-field checks shared by every area endpoint.
+
+    How: ``start_date <= end_date`` (both inclusive, so equal dates select one
+    day), then the corners are normalized with :func:`app.geo.normalize_rectangle`.
+
+    Args:
+        params: Parameters already validated field by field.
+
+    Returns:
+        The normalized rectangle.
+
+    Raises:
+        InvalidParameterError: If the dates are inverted or the rectangle is invalid.
+    """
+    if params.start_date > params.end_date:
+        raise InvalidParameterError(
+            "end_date", "'end_date' must be the same as or later than 'start_date'"
+        )
+    try:
+        return normalize_rectangle(params.lat1, params.lon1, params.lat2, params.lon2)
+    except RectangleError as exc:
+        raise InvalidParameterError(exc.parameter, exc.message) from None
 
 
 def parse_hotspot_query(
@@ -265,17 +306,9 @@ def parse_hotspot_query(
     try:
         params = HotspotQueryParams.model_validate(args, context={"max_limit": max_limit})
     except ValidationError as exc:
-        raise _first_error(exc) from None
+        raise first_error(exc) from None
 
-    if params.start_date > params.end_date:
-        raise InvalidParameterError(
-            "end_date", "'end_date' must be the same as or later than 'start_date'"
-        )
-    try:
-        bbox = normalize_rectangle(params.lat1, params.lon1, params.lat2, params.lon2)
-    except RectangleError as exc:
-        raise InvalidParameterError(exc.parameter, exc.message) from None
-
+    bbox = validate_area(params)
     return HotspotQuery(
         bbox=bbox,
         start_date=params.start_date,

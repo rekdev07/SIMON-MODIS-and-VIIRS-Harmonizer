@@ -70,9 +70,57 @@ HOTSPOT_COLUMNS: tuple[str, ...] = (
 
 _SELECT_COLUMNS = ", ".join(HOTSPOT_COLUMNS)
 
+#: Normalized projection of ``hotspots`` used by the statistics endpoints.
+#:
+#: It renames columns to the dashboard vocabulary and adds derived fields:
+#:
+#: * ``sensor`` = ``instrument`` (MODIS/VIIRS), ``timestamp_utc`` = ``acquired_at``,
+#:   ``lat``/``lon``, ``type`` = ``fire_type``, ``scan``/``track`` in km.
+#: * ``pixel_area_km2 = scan * track``: the ground footprint of the pixel. It
+#:   grows towards the edge of the swath, which inflates FRP and brightness.
+#: * ``confidence_level`` is recomputed from ``confidence_raw`` so the mapping
+#:   lives in SQL too: MODIS numbers ``< 30`` low, ``30..79`` nominal, ``>= 80``
+#:   high; VIIRS letters ``l``/``n``/``h``. Anything else falls back to the
+#:   stored ``confidence``.
+#:
+#: The API embeds it as a subquery (it works on any database file, even one
+#: imported before this view existed); :func:`create_hotspots_table` also
+#: stores it as the view ``hotspots_normalized`` for ad-hoc analysis.
+NORMALIZED_HOTSPOTS_SQL = """
+SELECT
+    instrument                     AS sensor,
+    satellite,
+    acquired_at                    AS timestamp_utc,
+    acq_date,
+    latitude                       AS lat,
+    longitude                      AS lon,
+    bright_mir,
+    bright_tir,
+    frp,
+    CASE
+        WHEN instrument = 'MODIS' AND TRY_CAST(confidence_raw AS DOUBLE) IS NOT NULL THEN
+            CASE
+                WHEN TRY_CAST(confidence_raw AS DOUBLE) < 30 THEN 'low'
+                WHEN TRY_CAST(confidence_raw AS DOUBLE) < 80 THEN 'nominal'
+                ELSE 'high'
+            END
+        WHEN lower(confidence_raw) IN ('l', 'low') THEN 'low'
+        WHEN lower(confidence_raw) IN ('n', 'nominal') THEN 'nominal'
+        WHEN lower(confidence_raw) IN ('h', 'high') THEN 'high'
+        ELSE confidence
+    END                            AS confidence_level,
+    confidence_raw,
+    daynight,
+    fire_type                      AS "type",
+    pixel_scan                     AS scan,
+    pixel_track                    AS track,
+    pixel_scan * pixel_track       AS pixel_area_km2
+FROM hotspots
+"""
+
 
 def create_hotspots_table(connection: duckdb.DuckDBPyConnection) -> None:
-    """Create the ``hotspots`` table (if missing) and the date index.
+    """Create the ``hotspots`` table (if missing), the date index and the normalized view.
 
     The ``acq_date`` index speeds up the date filter, which is the most
     selective condition in typical queries (a few days out of 25 years).
@@ -82,6 +130,7 @@ def create_hotspots_table(connection: duckdb.DuckDBPyConnection) -> None:
     """
     connection.execute(HOTSPOTS_TABLE_DDL)
     connection.execute("CREATE INDEX IF NOT EXISTS idx_hotspots_acq_date ON hotspots (acq_date)")
+    connection.execute(f"CREATE OR REPLACE VIEW hotspots_normalized AS {NORMALIZED_HOTSPOTS_SQL}")
 
 
 #: DuckDB type of each column, used to read the staging NDJSON file.

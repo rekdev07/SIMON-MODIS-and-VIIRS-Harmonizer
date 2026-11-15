@@ -2,13 +2,14 @@
 
 * :mod:`app.routes.hotspots`: ``GET /api/v1/hotspots``
 * :mod:`app.routes.meta`: ``GET /api/v1/dataset`` and ``GET /health``
+* :mod:`app.routes.stats`: ``GET /api/v1/stats/*`` (dashboard aggregates)
 """
 
 from __future__ import annotations
 
 from flask import Flask
 
-from app.routes import hotspots, meta
+from app.routes import hotspots, meta, stats
 
 
 def register_blueprints(app: Flask) -> None:
@@ -19,3 +20,4 @@ def register_blueprints(app: Flask) -> None:
     """
     app.register_blueprint(hotspots.bp)
     app.register_blueprint(meta.bp)
+    app.register_blueprint(stats.bp)
