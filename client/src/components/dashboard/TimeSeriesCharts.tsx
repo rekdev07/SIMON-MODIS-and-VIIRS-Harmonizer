@@ -27,34 +27,48 @@ const FREQ_OPTIONS = [
   { value: 'month', label: 'Monthly' },
 ]
 
-/** The four series of charts 2-5: field, title and unit. */
+/** Offset between kelvin (API unit of brightness) and degrees Celsius. */
+const KELVIN_TO_CELSIUS = -273.15
+
+/**
+ * The series of charts 2, 4 and 5: field, title, unit and the offset added to
+ * the API value before plotting (brightness arrives in kelvin and is shown in
+ * °C, which reads more naturally).
+ */
 const SERIES: {
   number: string
-  field: 'detections' | 'frp_total' | 'frp_mean' | 'bright_mir_mean'
+  field: 'detections' | 'frp_mean' | 'bright_mir_mean'
   title: string
   unit: string
+  offset: number
 }[] = [
   {
     number: '2',
     field: 'detections',
     title: 'Detections over time',
     unit: 'detections',
+    offset: 0,
   },
-  { number: '3', field: 'frp_total', title: 'Total FRP over time', unit: 'MW' },
-  { number: '4', field: 'frp_mean', title: 'Mean FRP over time', unit: 'MW' },
+  {
+    number: '4',
+    field: 'frp_mean',
+    title: 'Mean FRP over time',
+    unit: 'MW',
+    offset: 0,
+  },
   {
     number: '5',
     field: 'bright_mir_mean',
     title: 'Mean MIR brightness over time',
-    unit: 'K',
+    unit: '°C',
+    offset: KELVIN_TO_CELSIUS,
   },
 ]
 
 /** Line chart option: one line per sensor on a time axis. */
 function lineOption(
   rows: TimeseriesRow[],
-  field: (typeof SERIES)[number]['field'],
-  unit: string,
+  { field, unit, offset }: (typeof SERIES)[number],
 ): EChartOption {
   return {
     grid: GRID_LAYOUT,
@@ -74,17 +88,20 @@ function lineOption(
       color: SENSOR_COLORS[sensor],
       data: rows
         .filter((row) => row.sensor === sensor)
-        .map((row) => [row.period, row[field]]),
+        .map((row) => {
+          const value = row[field]
+          return [row.period, value === null ? null : value + offset]
+        }),
     })),
   }
 }
 
 /**
- * Charts 2-5: detections, total FRP, mean FRP and mean MIR brightness per
+ * Charts 2, 4 and 5: detections, mean FRP and mean MIR brightness (°C) per
  * period and sensor, from one `/stats/timeseries` request.
  *
  * The frequency selector is repeated on every card but drives a single
- * state, so the four charts always show the same periods. Periods without
+ * state, so the three charts always show the same periods. Periods without
  * detections are absent from the API answer, so lines simply connect the
  * periods that exist.
  */
@@ -98,7 +115,7 @@ function TimeSeriesCharts({ query }: TimeSeriesChartsProps) {
   )
   const rows = useMemo(() => response?.data ?? [], [response])
   const chartOptions = useMemo(
-    () => SERIES.map((s) => lineOption(rows, s.field, s.unit)),
+    () => SERIES.map((s) => lineOption(rows, s)),
     [rows],
   )
   const emptyMessage = emptyMessageOf(response, rows.length === 0)

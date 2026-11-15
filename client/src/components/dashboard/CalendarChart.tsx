@@ -22,25 +22,39 @@ type CalendarChartProps = {
 }
 
 type Metric = 'detections' | 'frp'
-type Granularity = 'day' | 'week'
+
+/** Column labels of the calendar, one per month. */
+const MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
 
 /**
  * Chart 11: burn calendar from `/stats/calendar`, a heat map with one row per
- * year and one column per day of year (or ISO week).
+ * year and one column per month.
+ *
+ * The API answers per day, so the daily values are summed per year and month
+ * here. Both metrics are totals (detections, total FRP), so the sum is exact.
  *
  * Only one sensor is shown at a time (selector appears when both have data):
  * mixing them in one cell would add MODIS and VIIRS counts together. Color is
- * a single-hue sequential ramp, light = few, dark = many. Empty cells are days
- * without detections.
+ * a single-hue sequential ramp, light = few, dark = many. Empty cells are
+ * months without detections.
  */
 function CalendarChart({ query }: CalendarChartProps) {
   const [metric, setMetric] = useState<Metric>('detections')
-  const [granularity, setGranularity] = useState<Granularity>('day')
   const [chosenSensor, setChosenSensor] = useState<Sensor | null>(null)
-  const options = useMemo(
-    () => ({ metric, granularity }),
-    [metric, granularity],
-  )
+  const options = useMemo(() => ({ metric, granularity: 'day' }), [metric])
   const { response, loading, error } = useStats<CalendarRow[]>(
     'calendar',
     query,
@@ -53,10 +67,20 @@ function CalendarChart({ query }: CalendarChartProps) {
   const unit = metric === 'frp' ? 'MW' : 'detections'
 
   const option = useMemo(() => {
-    const own = rows.filter((row) => row.sensor === sensor)
-    const years = [...new Set(own.map((row) => row.year))].sort()
-    const columns = granularity === 'day' ? 366 : 53
-    const values = own.map((row) => row.value ?? 0)
+    // Sum of the daily values per "year-month" (month 0-based).
+    const totals = new Map<string, number>()
+    for (const row of rows) {
+      if (row.sensor !== sensor) continue
+      const month = Number(row.date.slice(5, 7)) - 1
+      const key = `${row.year}-${month}`
+      totals.set(key, (totals.get(key) ?? 0) + (row.value ?? 0))
+    }
+    const cells = [...totals].map(([key, value]) => {
+      const [year, month] = key.split('-').map(Number)
+      return { year, month, value }
+    })
+    const years = [...new Set(cells.map((cell) => cell.year))].sort()
+    const values = cells.map((cell) => cell.value)
     return {
       grid: { left: 48, right: 16, top: 8, bottom: 104 },
       tooltip: {
@@ -65,10 +89,10 @@ function CalendarChart({ query }: CalendarChartProps) {
       },
       xAxis: {
         type: 'category',
-        name: granularity === 'day' ? 'Day of year' : 'ISO week',
+        name: 'Month',
         nameLocation: 'middle',
         nameGap: 24,
-        data: Array.from({ length: columns }, (_, i) => String(i + 1)),
+        data: MONTH_LABELS,
         ...AXIS_STYLE,
         splitArea: { show: false },
       },
@@ -94,24 +118,23 @@ function CalendarChart({ query }: CalendarChartProps) {
       series: [
         {
           type: 'heatmap',
-          // [column index, row index, value, date]; the category index is
-          // 0-based while the day/week number from the API is 1-based.
-          data: own.map((row) => [
-            ((granularity === 'day' ? row.day_of_year : row.week) ?? 1) - 1,
-            years.indexOf(row.year),
-            row.value ?? 0,
-            row.date,
+          // [column index, row index, value, label].
+          data: cells.map((cell) => [
+            cell.month,
+            years.indexOf(cell.year),
+            cell.value,
+            `${MONTH_LABELS[cell.month]} ${cell.year}`,
           ]),
         },
       ],
     }
-  }, [rows, sensor, granularity, unit])
+  }, [rows, sensor, unit])
 
   return (
     <ChartCard
       number="11"
       title="Burn calendar"
-      subtitle={`${sensor ?? 'Per sensor'}: ${metric === 'frp' ? 'total FRP (MW)' : 'detections'} per ${granularity === 'day' ? 'day' : 'week'} and year (UTC).`}
+      subtitle={`${sensor ?? 'Per sensor'}: ${metric === 'frp' ? 'total FRP (MW)' : 'detections'} per month and year (UTC).`}
       loading={loading}
       error={error}
       emptyMessage={emptyMessageOf(response, rows.length === 0)}
@@ -126,15 +149,6 @@ function CalendarChart({ query }: CalendarChartProps) {
               { value: 'frp', label: 'Total FRP' },
             ]}
             onChange={(value) => setMetric(value as Metric)}
-          />
-          <MiniSelect
-            label="Granularity"
-            value={granularity}
-            options={[
-              { value: 'day', label: 'By day' },
-              { value: 'week', label: 'By week' },
-            ]}
-            onChange={(value) => setGranularity(value as Granularity)}
           />
           {sensors.length > 1 && sensor && (
             <MiniSelect

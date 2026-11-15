@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { ArrowLeft, ChartNoAxesCombined } from 'lucide-react'
 import { type Bounds } from '../types/hotspots'
 import { type StatsFilters, type StatsQuery } from '../types/stats'
 import { formatLatLng } from '../utils/coordinates'
@@ -32,9 +33,17 @@ type DashboardProps = {
   onFiltersChange: (filters: StatsFilters) => void
 }
 
+/** Section of the dashboard on screen. */
+type Section = 'main' | 'advanced'
+
 /**
- * Dashboard view: the 25 charts for the area and dates saved in the side
- * panel, filtered by the bar at the top.
+ * Dashboard view: the charts for the area and dates saved in the side panel,
+ * filtered by the bar at the top.
+ *
+ * It has two sections. The main one keeps the overview charts and a button
+ * that opens "Advanced data", which holds the detailed distributions,
+ * scatter plots, breakdowns and sensor comparisons. Only the section on
+ * screen is mounted, so the advanced charts are not requested until opened.
  *
  * Every chart loads its own `/api/v1/stats/*` endpoint through `useStats`, so
  * each shows its own loading, empty and error state and re-fetches only when
@@ -42,6 +51,7 @@ type DashboardProps = {
  * computed by the API; the components only draw them.
  */
 function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
+  const [section, setSection] = useState<Section>('main')
   const query = useMemo<StatsQuery | null>(
     () => (area ? { ...area, filters } : null),
     [area, filters],
@@ -51,7 +61,20 @@ function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
     <div className="h-screen overflow-y-auto bg-gray-100 p-6">
       <header className="mb-4 flex flex-col gap-3">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Dashboard</h2>
+          <div className="flex flex-wrap items-center gap-3">
+            {section === 'advanced' && (
+              <button
+                type="button"
+                onClick={() => setSection('main')}
+                className="flex items-center gap-1 rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 transition hover:bg-gray-100"
+              >
+                <ArrowLeft size={14} /> Back to dashboard
+              </button>
+            )}
+            <h2 className="text-lg font-bold text-gray-900">
+              {section === 'main' ? 'Dashboard' : 'Advanced data'}
+            </h2>
+          </div>
           {area ? (
             <p className="text-xs text-gray-600">
               Area SW {formatLatLng(area.bounds.southWest, 2)} · NE{' '}
@@ -66,10 +89,29 @@ function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
         )}
       </header>
 
-      {query ? (
+      {query && section === 'main' ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <KpiCards query={query} />
           <TimeSeriesCharts query={query} />
+          <CalendarChart query={query} />
+          <CategoryChart
+            query={query}
+            number="15"
+            title="By fire type"
+            field="type"
+          />
+          <TopEventsTable query={query} />
+          <GridMap query={query} />
+          <button
+            type="button"
+            onClick={() => setSection('advanced')}
+            className="flex items-center justify-center gap-2 rounded border border-blue-600 bg-white p-6 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 lg:col-span-2"
+          >
+            <ChartNoAxesCombined size={18} /> Open advanced data
+          </button>
+        </div>
+      ) : query ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <DistributionChart
             query={query}
             number="6"
@@ -103,14 +145,6 @@ function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
             x="pixel_area_km2"
             y="frp"
           />
-          <ScatterPlot
-            query={query}
-            number="19"
-            title="MIR brightness vs FRP"
-            x="bright_mir"
-            y="frp"
-          />
-          <CalendarChart query={query} />
           <HourChart query={query} />
           <CategoryChart
             query={query}
@@ -126,12 +160,6 @@ function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
           />
           <CategoryChart
             query={query}
-            number="15"
-            title="By fire type"
-            field="type"
-          />
-          <CategoryChart
-            query={query}
             number="16"
             title="By confidence level"
             field="confidence_level"
@@ -144,9 +172,14 @@ function Dashboard({ area, filters, onFiltersChange }: DashboardProps) {
             bins={10}
           />
           <ScanChart query={query} />
-          <TopEventsTable query={query} />
+          <ScatterPlot
+            query={query}
+            number="19"
+            title="MIR brightness vs FRP"
+            x="bright_mir"
+            y="frp"
+          />
           <PointsMap query={query} />
-          <GridMap query={query} />
           <SensorComparisonCharts query={query} />
           <MonthlyChart query={query} />
         </div>
