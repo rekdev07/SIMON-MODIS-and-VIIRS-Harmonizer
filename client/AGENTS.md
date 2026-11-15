@@ -35,6 +35,7 @@ inside `client/`.
 | Build / dev server | **Vite** (dev server http://localhost:5173)                                                                            |
 | Styling            | **Tailwind CSS v4** via `@tailwindcss/vite`, imported in `src/index.css`                                               |
 | Maps               | **Leaflet** + **react-leaflet**                                                                                        |
+| Charts             | **Apache ECharts** (`echarts`, tree-shaken via `echarts/core`), wrapped in `components/dashboard/EChart.tsx`           |
 | Lint               | **ESLint** flat config (`eslint.config.js`): JS + typescript-eslint + react-hooks + react-refresh, Prettier-compatible |
 | Format             | **Prettier** (`.prettierrc.json`): no semicolons, single quotes, trailing commas, width 80, Tailwind class sorting     |
 | Config             | Vite env vars (`VITE_*`) from `.env` / `.env.local`                                                                    |
@@ -53,10 +54,11 @@ client/
 │  ├─ main.tsx               React root: StrictMode + global CSS + <App />
 │  ├─ App.tsx                top-level component / page switch
 │  ├─ index.css              Tailwind import and global styles
-│  ├─ pages/                 one component per screen (e.g. MapViewer.tsx)
+│  ├─ pages/                 one component per screen (MapViewer.tsx, Dashboard.tsx)
 │  └─ components/
 │     ├─ landing/            components of the landing page (Navbar.tsx)
-│     └─ ScreenViewer/       components of the map viewer (Map.tsx, SideBar.tsx)
+│     ├─ ScreenViewer/       components of the map viewer (Map.tsx, SideBar.tsx, ViewToggle.tsx)
+│     └─ dashboard/          the 25 dashboard charts, ChartCard, EChart wrapper, filters
 ├─ eslint.config.js, .prettierrc.json, .prettierignore
 ├─ vite.config.ts, tsconfig*.json
 └─ package.json, package-lock.json, README.md
@@ -128,6 +130,15 @@ and this section.
   Show that message to the user; it is not an error. `message` exists only when empty.
 - `truncated: true` means there are more hotspots than `limit`: tell the user and offer to
   narrow the area/dates or page with `offset`.
+
+### `GET /api/v1/stats/*` (dashboard)
+
+Contract: `server/docs/dashboard-api.md`. The dashboard (`pages/Dashboard.tsx`) is shown
+with the toggle under the SIMON title and uses the area and dates applied with **Save**
+plus its own filter row. Types in `src/types/stats.ts`, requests in `src/api/stats.ts`,
+one `useStats(endpoint, query, options)` call per chart (re-fetches when they change,
+aborts stale requests). Never add MODIS and VIIRS counts in the UI: one series per sensor.
+The dashboard is lazy-loaded so ECharts is not in the map's bundle.
 
 ### Other endpoints
 

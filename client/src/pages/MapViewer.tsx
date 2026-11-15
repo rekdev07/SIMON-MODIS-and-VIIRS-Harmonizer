@@ -1,6 +1,10 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, Suspense, lazy, useState } from 'react'
 import SideBar from '../components/ScreenViewer/SideBar'
 import HotspotMap from '../components/ScreenViewer/Map'
+import ViewToggle, {
+  type MainView,
+} from '../components/ScreenViewer/ViewToggle'
+import type { DashboardArea } from './Dashboard'
 import TextField from '../components/fields/TextField'
 import DatePicker from '../components/fields/DatePicker'
 import Button from '../components/landing/Buttons'
@@ -8,10 +12,15 @@ import { useGeolocation } from '../hooks/useGeolocation'
 import { useHotspots } from '../hooks/useHotspots'
 import { useDataset } from '../hooks/useDataset'
 import { type Bounds, type LatLngPoint } from '../types/hotspots'
+import { DEFAULT_STATS_FILTERS, type StatsFilters } from '../types/stats'
 import { formatLatLng, parseLatLng, todayUtc } from '../utils/coordinates'
 
 /** First day with satellite data (start of MODIS); the API rejects earlier dates. */
 const API_MIN_DATE = '2000-11-01'
+
+// Loaded on first use: the dashboard pulls in the charting library (ECharts),
+// so the map view does not pay for it.
+const Dashboard = lazy(() => import('./Dashboard'))
 
 const GEO_STATUS_TEXT = {
   locating: 'Looking for your location…',
@@ -34,6 +43,14 @@ function MapViewer() {
   const [drawMode, setDrawMode] = useState(false)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+
+  // Main area: map or dashboard. The dashboard uses the area and dates last
+  // applied with Save, so editing the form does not refetch 21 charts per keystroke.
+  const [view, setView] = useState<MainView>('map')
+  const [dashboardArea, setDashboardArea] = useState<DashboardArea | null>(null)
+  const [statsFilters, setStatsFilters] = useState<StatsFilters>(
+    DEFAULT_STATS_FILTERS,
+  )
 
   const center = manualCenter ?? geo.position
   const coordsValue = coordsText ?? formatLatLng(geo.position)
@@ -76,6 +93,14 @@ function MapViewer() {
     e.preventDefault()
     if (!canSave || !bounds) return
     hotspots.search({ bounds, startDate, endDate })
+    setDashboardArea({ bounds, startDate, endDate })
+  }
+
+  // Drawing happens on the map, so starting to draw from the dashboard view
+  // switches back to the map first.
+  const toggleDrawMode = () => {
+    if (!drawMode) setView('map')
+    setDrawMode(!drawMode)
   }
 
   const data = hotspots.data
@@ -83,7 +108,8 @@ function MapViewer() {
   return (
     <div className="grid h-screen grid-cols-[300px_1fr] bg-gray-300">
       <SideBar>
-        <h1 className="mb-6 text-xl font-bold">SIMON</h1>
+        <h1 className="mb-3 text-xl font-bold">SIMON</h1>
+        <ViewToggle view={view} onChange={setView} />
         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
           <p>Step 1. Choose a place</p>
           <TextField
@@ -98,12 +124,8 @@ function MapViewer() {
             <p className="-mt-3 text-xs text-red-600">{coordsError}</p>
           )}
           <div className="flex gap-2">
-            <Button onClick={goToCoords}>
-              Go
-            </Button>
-            <Button onClick={useMyLocation}>
-              Use my location
-            </Button>
+            <Button onClick={goToCoords}>Go</Button>
+            <Button onClick={useMyLocation}>Use my location</Button>
           </div>
           <p className="-mt-3 text-xs text-gray-500">
             {GEO_STATUS_TEXT[geo.status]}
@@ -125,13 +147,10 @@ function MapViewer() {
             </p>
           )}
           <div className="flex gap-2">
-            <Button onClick={() => setDrawMode(!drawMode)}>
+            <Button onClick={toggleDrawMode}>
               {drawMode ? 'Cancel' : bounds ? 'Redraw area' : 'Draw area'}
             </Button>
-            <Button
-              onClick={() => setBounds(null)}
-              disabled={!bounds}
-            >
+            <Button onClick={() => setBounds(null)} disabled={!bounds}>
               Clear
             </Button>
           </div>
@@ -185,16 +204,32 @@ function MapViewer() {
         </form>
       </SideBar>
 
-      <HotspotMap
-        center={center}
-        flyRequestId={flyRequestId}
-        bounds={bounds}
-        onBoundsChange={setBounds}
-        drawMode={drawMode}
-        onDrawModeChange={setDrawMode}
-        onLocate={useMyLocation}
-        hotspots={data?.features ?? []}
-      />
+      {view === 'map' ? (
+        <HotspotMap
+          center={center}
+          flyRequestId={flyRequestId}
+          bounds={bounds}
+          onBoundsChange={setBounds}
+          drawMode={drawMode}
+          onDrawModeChange={setDrawMode}
+          onLocate={useMyLocation}
+          hotspots={data?.features ?? []}
+        />
+      ) : (
+        <Suspense
+          fallback={
+            <p className="flex h-screen items-center justify-center text-sm text-gray-500">
+              Loading dashboard…
+            </p>
+          }
+        >
+          <Dashboard
+            area={dashboardArea}
+            filters={statsFilters}
+            onFiltersChange={setStatsFilters}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }
