@@ -39,6 +39,11 @@ Each request has small automatic checks (called *tests*), for example "status is
 The checks expect the **real data** (`fire_archive_SV-C2_849193.json`, Mexico 2013). With fake
 data, the "Hotspots: Yucatán" checks may still pass, but the exact numbers will differ.
 
+The **Stats (dashboard)** folder has one request per `/api/v1/stats/*` endpoint (Durango, 2013),
+an empty-area case and three 400 cases. Its checks only look at the shape of the answer
+(fields, `message`, error `parameter`), so they pass with any data that has detections in
+Durango in 2013. What each endpoint returns: [dashboard-api.md](dashboard-api.md).
+
 ## Doing it by hand (to understand what is happening)
 
 ### 1. Your first request: health

@@ -923,6 +923,1209 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Stats (dashboard)",
+      "description": "Pre-computed aggregates for the dashboard charts. Contract: server/docs/dashboard-api.md. Checks expect the Mexico MODIS data (Durango, 2013).",
+      "item": [
+        {
+          "name": "Summary (KPIs, chart 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"sensor\", \"total_detections\", \"frp_mean\", \"frp_max\", \"bright_mir_mean\", \"bright_tir_mean\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "KPIs per sensor.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/summary?lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Time series, weekly (charts 2-5)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"period\", \"sensor\", \"detections\", \"frp_total\", \"frp_mean\", \"bright_mir_mean\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Detections and FRP per week and sensor.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/timeseries?freq=week&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "timeseries"
+              ],
+              "query": [
+                {
+                  "key": "freq",
+                  "value": "week"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "FRP histogram, log bins (charts 6-8)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"bin_start\", \"bin_end\", \"sensor\", \"count\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Histogram with bins shared by both sensors.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/distribution?field=frp&bins=20&log=true&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "distribution"
+              ],
+              "query": [
+                {
+                  "key": "field",
+                  "value": "frp"
+                },
+                {
+                  "key": "bins",
+                  "value": "20"
+                },
+                {
+                  "key": "log",
+                  "value": "true"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MODIS confidence histogram (chart 17)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"bin_start\", \"bin_end\", \"sensor\", \"count\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "MODIS-only numeric confidence.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/distribution?field=confidence_raw&bins=10&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "distribution"
+              ],
+              "query": [
+                {
+                  "key": "field",
+                  "value": "confidence_raw"
+                },
+                {
+                  "key": "bins",
+                  "value": "10"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Scatter MIR vs TIR (charts 9, 10, 19)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"x\", \"y\", \"sensor\", \"confidence_level\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Stable pseudo-random sample.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/scatter?x=bright_mir&y=bright_tir&limit=2000&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "scatter"
+              ],
+              "query": [
+                {
+                  "key": "x",
+                  "value": "bright_mir"
+                },
+                {
+                  "key": "y",
+                  "value": "bright_tir"
+                },
+                {
+                  "key": "limit",
+                  "value": "2000"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Burn calendar (chart 11)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"year\", \"day_of_year\", \"date\", \"sensor\", \"value\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Value per year and day of year.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/calendar?metric=detections&granularity=day&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "calendar"
+              ],
+              "query": [
+                {
+                  "key": "metric",
+                  "value": "detections"
+                },
+                {
+                  "key": "granularity",
+                  "value": "day"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Detection hour (chart 12)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"hour_utc\", \"sensor\", \"satellite\", \"detections\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Detections per UTC hour and satellite.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/by-hour?lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "by-hour"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "By category: day/night (charts 13-16)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"category\", \"sensor\", \"detections\", \"frp_mean\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Detections and mean FRP per category.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/by-category?field=daynight&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "by-category"
+              ],
+              "query": [
+                {
+                  "key": "field",
+                  "value": "daynight"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "View-angle effect (chart 18)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"sensor\", \"scan_start\", \"scan_end\", \"detections\", \"frp_p5\", \"frp_median\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "FRP p5 and median per scan range.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/by-scan?bins=10&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "by-scan"
+              ],
+              "query": [
+                {
+                  "key": "bins",
+                  "value": "10"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Top events (chart 20)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"timestamp_utc\", \"lat\", \"lon\", \"frp\", \"bright_mir\", \"bright_tir\", \"sensor\", \"satellite\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Highest-FRP detections.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/top-events?n=10&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "top-events"
+              ],
+              "query": [
+                {
+                  "key": "n",
+                  "value": "10"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Point map (chart 21)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"lat\", \"lon\", \"frp\", \"sensor\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Light points, strongest FRP first.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/points?limit=5000&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "points"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5000"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Heat map grid (chart 22)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"lat\", \"lon\", \"sensor\", \"detections\", \"frp_total\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Detections and FRP per cell (center coordinates).",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/grid?cell=0.25&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "grid"
+              ],
+              "query": [
+                {
+                  "key": "cell",
+                  "value": "0.25"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MODIS vs VIIRS (charts 23-24)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data has daily and ratio lists\", () => { pm.expect(b.data.daily).to.be.an(\"array\").that.is.not.empty; pm.expect(b.data.ratio).to.be.an(\"array\"); });",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Daily per sensor + VIIRS/MODIS ratio (empty without VIIRS).",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/sensor-comparison?lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "sensor-comparison"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Seasonality by month (chart 25)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Has metadata with units\", () => pm.expect(b.metadata.units).to.be.an(\"object\"));",
+                  "pm.test(\"data is a non-empty list\", () => pm.expect(b.data).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Rows have the documented fields\", () => pm.expect(b.data[0]).to.have.all.keys([\"month\", \"sensor\", \"detections\", \"years_with_data\"]));",
+                  "pm.test(\"No message when there is data\", () => pm.expect(b).to.not.have.property(\"message\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Detections per calendar month, all years together.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/monthly?lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "monthly"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: empty area (Spain)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Empty data\", () => pm.expect(b.data).to.have.length(0));",
+                  "pm.test(\"Exact empty message\", () => pm.expect(b.message).to.eql(\"No data found in the selected area\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "A valid query with no detections still returns 200.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/summary?lat1=40&lon1=0&lat2=41&lon2=1&start_date=2013-04-01&end_date=2013-04-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "40"
+                },
+                {
+                  "key": "lon1",
+                  "value": "0"
+                },
+                {
+                  "key": "lat2",
+                  "value": "41"
+                },
+                {
+                  "key": "lon2",
+                  "value": "1"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-04-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-04-30"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: invalid freq",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test(\"Error code is INVALID_PARAMETER\", () => pm.expect(e.code).to.eql(\"INVALID_PARAMETER\"));",
+                  "pm.test(\"Points at 'freq'\", () => pm.expect(e.parameter).to.eql(\"freq\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "400 pointing at 'freq'.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/timeseries?freq=year&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "timeseries"
+              ],
+              "query": [
+                {
+                  "key": "freq",
+                  "value": "year"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: by-category without field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test(\"Error code is INVALID_PARAMETER\", () => pm.expect(e.code).to.eql(\"INVALID_PARAMETER\"));",
+                  "pm.test(\"Points at 'field'\", () => pm.expect(e.parameter).to.eql(\"field\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "400 pointing at 'field'.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/by-category?lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "by-category"
+              ],
+              "query": [
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: unknown satellite",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json().error;",
+                  "pm.test(\"Error code is INVALID_PARAMETER\", () => pm.expect(e.code).to.eql(\"INVALID_PARAMETER\"));",
+                  "pm.test(\"Points at 'satellite'\", () => pm.expect(e.parameter).to.eql(\"satellite\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "400 pointing at 'satellite'.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats/summary?satellite=Landsat&lat1=22.3&lon1=-107.2&lat2=26.8&lon2=-102.5&start_date=2013-01-01&end_date=2013-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stats",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "satellite",
+                  "value": "Landsat"
+                },
+                {
+                  "key": "lat1",
+                  "value": "22.3"
+                },
+                {
+                  "key": "lon1",
+                  "value": "-107.2"
+                },
+                {
+                  "key": "lat2",
+                  "value": "26.8"
+                },
+                {
+                  "key": "lon2",
+                  "value": "-102.5"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2013-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2013-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

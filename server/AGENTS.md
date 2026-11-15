@@ -48,6 +48,8 @@ server/
 │  ├─ config.py              Settings loaded from environment variables
 │  ├─ db.py                  read-only DuckDB connection + one cursor per request
 │  ├─ schemas.py             Pydantic models: query params and response metadata
+│  ├─ stats_schemas.py       stats filters (satellite, fire_type) + per-endpoint options
+│  ├─ stats_repository.py    dashboard aggregations (DuckDB SQL over NORMALIZED_HOTSPOTS_SQL)
 │  ├─ geo.py                 rectangle normalization and validation (pure functions)
 │  ├─ repository.py          table DDL + parameterized SQL queries
 │  ├─ serializers.py         rows -> GeoJSON / JSON
@@ -55,11 +57,12 @@ server/
 │  ├─ network.py             LAN helpers: private-network CORS pattern, LAN IP discovery
 │  └─ routes/
 │     ├─ hotspots.py         GET /api/v1/hotspots
+│     ├─ stats.py            GET /api/v1/stats/* (13 dashboard endpoints)
 │     └─ meta.py             GET /api/v1/dataset, GET /health
 ├─ scripts/
 │  ├─ import_json.py         raw FIRMS JSON -> normalized DuckDB table
 │  └─ generate_mock_data.py  fake but realistic Mexico hotspots
-├─ docs/                     plain-language docs (running + LAN, postman + postman/ collection, api, filtering, dates, data-import)
+├─ docs/                     plain-language docs (running + LAN, postman + postman/ collection, api, dashboard-api, filtering, dates, data-import)
 ├─ tests/                    pytest suite with its own small known dataset
 ├─ data/                     GITIGNORED: data/raw/*.json and *.duckdb files
 ├─ .env.example, requirements*.txt, pyproject.toml, run.py, README.md
@@ -167,6 +170,24 @@ GeoJSON (default): `FeatureCollection`, coordinates `[longitude, latitude]`, pro
 No results → **HTTP 200**, empty list, and `"message": "No data found in the selected area"`.
 The `message` key appears **only** when there are no results.
 
+### `GET /api/v1/stats/*` (dashboard)
+
+Contract: `docs/dashboard-api.md`. 13 endpoints: `summary`, `timeseries`, `distribution`,
+`scatter`, `calendar`, `by-hour`, `by-category`, `by-scan`, `top-events`, `points`, `grid`,
+`sensor-comparison`, `monthly`.
+
+- Same area params and rules as `/api/v1/hotspots` (`lat1..lon2`, `start_date`, `end_date`,
+  `confidence_min`, `daynight`, `instrument`) plus `satellite` and `fire_type`
+  (`0` default = type 0 **or NULL**, `1`..`3` exact, `all`).
+- They read `NORMALIZED_HOTSPOTS_SQL` (`app/repository.py`): `sensor`, `timestamp_utc`, `lat`, `lon`,
+  `confidence_level` recomputed from `confidence_raw`, `type`, `scan`, `track`,
+  `pixel_area_km2 = scan * track`. The importer also creates it as the view `hotspots_normalized`.
+- All aggregation runs in DuckDB. **Never add MODIS and VIIRS counts together**: group by `sensor`.
+  Use "detections", never "fires".
+- Body: `{"data", "metadata": {bbox, start_date, end_date, filters, units, ...options}}`; `message`
+  only when nothing matched (HTTP 200). `null` instead of NaN, ISO 8601 UTC dates.
+- Field/column choices from the query string map to SQL through fixed dicts in `stats_repository.py`.
+
 ### `GET /api/v1/dataset`
 Total records, min/max `acq_date`, count per instrument, bbox of all data (for frontend date pickers).
 
@@ -223,7 +244,8 @@ python -m pydoc app.geo          # code docs
   with results, 400 cases (coords, degenerate rectangle, dates), limit/truncated,
   vegetation_only, confidence_min, daynight, instrument, GeoJSON `[lon, lat]`, `/health`
   with and without DB, import normalization (padding, confidence, satellites, type→NULL,
-  rejections, duplicates).
+  rejections, duplicates), the normalized stats projection and every `/api/v1/stats/*` endpoint
+  (values, empty rectangle, 400s) with the `STATS_ROWS` database in `tests/conftest.py`.
 - Every behavior change needs a test. Run `pytest` before finishing.
 
 ## 12. Documentation rules
@@ -238,7 +260,7 @@ python -m pydoc app.geo          # code docs
 
 Downloading from FIRMS; harmonization/calibration between sensors (`harmonizer/`);
 coverage regions or state/country validation; authentication; free-form polygons;
-calendar and anomaly endpoints (later); any change to `client/` or `harmonizer/`.
+anomaly endpoints (later); any change to `client/` or `harmonizer/`.
 Never commit `data/` (raw JSON, `.duckdb`).
 
 ## 14. Git workflow (agents)

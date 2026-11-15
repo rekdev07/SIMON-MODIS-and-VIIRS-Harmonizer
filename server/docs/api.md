@@ -5,6 +5,9 @@ Base URL: `http://localhost:5000` on the computer running the API, or
 API starts; see [running.md](running.md#using-the-api-from-other-devices-lan)). The examples use `localhost`. All responses are JSON and all
 messages are in English. There is no authentication.
 
+The pre-computed dashboard statistics (`/api/v1/stats/*`) have their own
+reference: [dashboard-api.md](dashboard-api.md).
+
 ---
 
 ## `GET /api/v1/hotspots`
