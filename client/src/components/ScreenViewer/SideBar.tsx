@@ -5,7 +5,7 @@ type SideBar = {
 }
 
 function SideBar({ children }: SideBar) {
-  return <section>{children}</section>
+  return <section className='bg-gray-50 p-6'>{children}</section>
 }
 
 export default SideBar

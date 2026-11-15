@@ -8,7 +8,7 @@ function MapViewer() {
   const [fecha, setFecha] = useState('')
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen grid grid-cols-[300px_1fr] bg-gray-300">
       <SideBar>
         <h1 className="mb-6 text-xl font-bold">SIMON</h1>
         <p>Paso 1. Elige un lugar</p>
