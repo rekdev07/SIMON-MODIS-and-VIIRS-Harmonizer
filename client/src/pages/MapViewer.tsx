@@ -1,4 +1,5 @@
 import { type FormEvent, Suspense, lazy, useState } from 'react'
+import { Download } from 'lucide-react'
 import SideBar from '../components/ScreenViewer/SideBar'
 import HotspotMap from '../components/ScreenViewer/Map'
 import ViewToggle, {
@@ -17,6 +18,8 @@ import { type CalendarView, type DateRange } from '../types/calendar'
 import { type Bounds, type LatLngPoint } from '../types/hotspots'
 import { DEFAULT_STATS_FILTERS, type StatsFilters } from '../types/stats'
 import { formatLatLng, parseLatLng, todayUtc } from '../utils/coordinates'
+import { buildHotspotsCsv } from '../utils/hotspotsCsv'
+import { downloadText } from '../utils/download'
 
 /** First day with satellite data (start of MODIS); the API rejects earlier dates. */
 const API_MIN_DATE = '2000-11-01'
@@ -159,6 +162,21 @@ function MapViewer() {
 
   const data = hotspots.data
 
+  /**
+   * Saves the hotspots on the map as CSV, named after the searched rectangle
+   * and dates. When the result was truncated the file holds only the
+   * returned rows; the side panel already warns about that.
+   */
+  const downloadHotspots = () => {
+    if (!data) return
+    const [w, s, e, n] = data.metadata.bbox.map((v) => v.toFixed(2))
+    const { start_date, end_date } = data.metadata
+    downloadText(
+      `hotspots_${start_date}_${end_date}_${s}_${w}_${n}_${e}.csv`,
+      buildHotspotsCsv(data.features),
+    )
+  }
+
   return (
     <div className="grid h-screen grid-cols-[300px_1fr] bg-gray-300">
       <SideBar>
@@ -244,9 +262,18 @@ function MapViewer() {
               <p className="text-gray-600">{data.message}</p>
             )}
             {data && data.features.length > 0 && (
-              <p className="text-gray-700">
-                {data.metadata.returned.toLocaleString()} hotspots found.
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-gray-700">
+                  {data.metadata.returned.toLocaleString()} hotspots found.
+                </p>
+                <button
+                  type="button"
+                  onClick={downloadHotspots}
+                  className="flex items-center gap-1 rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 transition hover:bg-gray-100"
+                >
+                  <Download size={14} /> CSV
+                </button>
+              </div>
             )}
             {data?.metadata.truncated && (
               <p className="mt-1 text-amber-700">

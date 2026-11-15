@@ -36,6 +36,7 @@ inside `client/`.
 | Styling            | **Tailwind CSS v4** via `@tailwindcss/vite`, imported in `src/index.css`                                               |
 | Maps               | **Leaflet** + **react-leaflet**                                                                                        |
 | Charts             | **Apache ECharts** (`echarts`, tree-shaken via `echarts/core`), wrapped in `components/dashboard/EChart.tsx`           |
+| Image export       | **html-to-image** (`utils/download.ts`): PNG of the calendar and of each dashboard card                                |
 | Lint               | **ESLint** flat config (`eslint.config.js`): JS + typescript-eslint + react-hooks + react-refresh, Prettier-compatible |
 | Format             | **Prettier** (`.prettierrc.json`): no semicolons, single quotes, trailing commas, width 80, Tailwind class sorting     |
 | Config             | Vite env vars (`VITE_*`) from `.env` / `.env.local`                                                                    |
@@ -150,7 +151,7 @@ and this section.
   `partial` months are left out of medians and anomalies.
 - Drawn by `components/Calendar/BurnCalendar.tsx` in its own **Calendar** tab of the main view
   toggle (Map | Calendar | Dashboard) (year × month heatmap, YlOrRd counts / RdBu anomaly vs
-  median, CSV export). It always shows the whole loaded history (medians need it); the months of
+  median, CSV and PNG export). It always shows the whole loaded history (medians need it); the months of
   the last searched date range get a dashed outline. Clicking a month searches that month's
   hotspots and switches to the Map tab. Series switch: **Harmonized** (default, `harmonized=true`; a colored bar
   under each month shows its source, and an amber warning appears when the area is under ~1° × 1°
@@ -167,6 +168,18 @@ plus its own filter row. Types in `src/types/stats.ts`, requests in `src/api/sta
 one `useStats(endpoint, query, options)` call per chart (re-fetches when they change,
 aborts stale requests). Never add MODIS and VIIRS counts in the UI: one series per sensor.
 The dashboard is lazy-loaded so ECharts is not in the map's bundle.
+Every `ChartCard` with a chart has a **PNG** button that saves the whole card (title, subtitle,
+chart); ECharts renders at ≥ 2× so the image is sharp.
+
+### Downloads (challenge requirement: download analytics and visualizations)
+
+- Hotspots on the map → **CSV** button next to "N hotspots found" (`utils/hotspotsCsv.ts`;
+  only the returned rows when `truncated`).
+- Calendar → **CSV** (`utils/calendarCsv.ts`) and **PNG** of the panel as shown.
+- Dashboard → **PNG** per chart card.
+- All files are made in the browser (`utils/download.ts`); no server endpoint. Mark controls with
+  `data-export-ignore` to keep them out of PNGs. Avoid `inline-block` cells inside exported tables:
+  in the cloned image they gain baseline space and rows grow.
 
 ### Other endpoints
 
