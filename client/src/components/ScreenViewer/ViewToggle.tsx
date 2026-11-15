@@ -1,5 +1,3 @@
-import { CalendarDays, ChartColumn, MapIcon } from 'lucide-react'
-
 /** The main views of the app. */
 export type MainView = 'map' | 'calendar' | 'dashboard'
 
@@ -9,10 +7,11 @@ type ViewToggleProps = {
   onChange: (view: MainView) => void
 }
 
-const OPTIONS: { view: MainView; label: string; Icon: typeof MapIcon }[] = [
-  { view: 'map', label: 'Map', Icon: MapIcon },
-  { view: 'calendar', label: 'Calendar', Icon: CalendarDays },
-  { view: 'dashboard', label: 'Dashboard', Icon: ChartColumn },
+/** Text-only labels: three icon + text buttons do not fit in the 300 px side panel. */
+const OPTIONS: { view: MainView; label: string }[] = [
+  { view: 'map', label: 'Map' },
+  { view: 'calendar', label: 'Calendar' },
+  { view: 'dashboard', label: 'Dashboard' },
 ]
 
 /**
@@ -28,7 +27,7 @@ function ViewToggle({ view, onChange }: ViewToggleProps) {
       aria-label="Main view"
       className="mb-6 grid grid-cols-3 rounded-lg bg-gray-200 p-1"
     >
-      {OPTIONS.map(({ view: option, label, Icon }) => {
+      {OPTIONS.map(({ view: option, label }) => {
         const active = view === option
         return (
           <button
@@ -37,13 +36,12 @@ function ViewToggle({ view, onChange }: ViewToggleProps) {
             role="radio"
             aria-checked={active}
             onClick={() => onChange(option)}
-            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-sm font-medium transition ${
+            className={`truncate rounded-md px-1 py-1.5 text-sm font-medium transition ${
               active
                 ? 'bg-blue-600 text-white shadow'
                 : 'text-gray-700 hover:bg-gray-300'
             }`}
           >
-            <Icon size={16} aria-hidden />
             {label}
           </button>
         )
